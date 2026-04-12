@@ -1,0 +1,469 @@
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { CATEGORIES_CHI, CATEGORIES_THU, formatVND, formatFullVND, getStatusLabel } from '../data/mockData';
+import { type BudgetLine } from '../data/budgetData';
+import { useData } from '../data/DataContext';
+import './BudgetForecast.css';
+
+const ALL_CATS = [...CATEGORIES_THU, ...CATEGORIES_CHI];
+const catMap = Object.fromEntries(ALL_CATS.map(c => [c.code, c]));
+
+const STATUS_ORDER = ['in_progress', 'review', 'completed'] as const;
+const STATUS_LABELS: Record<string, string> = {
+  in_progress: '🟡 Đang làm',
+  review: '🟠 Review',
+  completed: '🟢 Hoàn thành',
+};
+
+import type { Project } from '../data/mockData';
+
+function getGroupedProjects(allProjects: Project[], search: string) {
+  const q = search.toLowerCase();
+  const filtered = allProjects.filter(p =>
+    p.status !== 'archived' &&
+    (!q || p.name.toLowerCase().includes(q) || p.client.toLowerCase().includes(q))
+  );
+  const groups: { status: string; label: string; projects: Project[] }[] = [];
+  for (const status of STATUS_ORDER) {
+    const projects = filtered.filter(p => p.status === status);
+    if (projects.length > 0) groups.push({ status, label: STATUS_LABELS[status] || status, projects });
+  }
+  return groups;
+}
+
+const budgetStatusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  planned: { label: '⏳ Chưa phát sinh', color: 'var(--text-muted)', bg: 'rgba(107, 109, 138, 0.1)' },
+  partial: { label: '🔄 Đang thực hiện', color: 'var(--color-info)', bg: 'rgba(116, 185, 255, 0.1)' },
+  done:    { label: '✅ Hoàn thành', color: 'var(--color-income)', bg: 'rgba(0, 184, 148, 0.1)' },
+  over:    { label: '🔴 Vượt dự toán', color: 'var(--color-danger)', bg: 'rgba(214, 48, 49, 0.1)' },
+};
+
+function parseAmount(raw: string): number {
+  const s = raw.trim().toLowerCase().replace(/,/g, '');
+  if (s.endsWith('ty') || s.endsWith('tỷ')) return parseFloat(s) * 1_000_000_000;
+  if (s.endsWith('tr')) return parseFloat(s) * 1_000_000;
+  if (s.endsWith('k')) return parseFloat(s) * 1_000;
+  return parseFloat(s) || 0;
+}
+
+export default function BudgetForecast() {
+  const { projects, budgetLines, addBudgetLine, updateBudgetLine, deleteBudgetLine } = useData();
+  const defaultProject = projects.find(p => p.status === 'in_progress');
+  const [activeProject, setActiveProject] = useState(defaultProject?.id || '');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownSearch, setDropdownSearch] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Form state
+  const [formType, setFormType] = useState<'thu' | 'chi'>('chi');
+  const [formCat, setFormCat] = useState('');
+  const [formDesc, setFormDesc] = useState('');
+  const [formEstimated, setFormEstimated] = useState('');
+  const [formActual, setFormActual] = useState('');
+  const [formStatus, setFormStatus] = useState<BudgetLine['status']>('planned');
+  const [formNote, setFormNote] = useState('');
+
+  const project = projects.find(p => p.id === activeProject);
+  const projectLines = budgetLines.filter(b => b.projectId === activeProject);
+  const hasBudgetLines = projectLines.length > 0;
+  const groups = getGroupedProjects(projects, dropdownSearch);
+
+  // Compute summary from local state
+  const summary = (() => {
+    const thuLines = projectLines.filter(b => b.type === 'thu');
+    const chiLines = projectLines.filter(b => b.type === 'chi');
+    const estThu = thuLines.reduce((s, b) => s + b.estimatedAmount, 0);
+    const actThu = thuLines.reduce((s, b) => s + b.actualAmount, 0);
+    const estChi = chiLines.reduce((s, b) => s + b.estimatedAmount, 0);
+    const actChi = chiLines.reduce((s, b) => s + b.actualAmount, 0);
+    return { thuLines, chiLines, estThu, actThu, estChi, actChi, estProfit: estThu - estChi, actProfit: actThu - actChi, variance: actChi - estChi };
+  })();
+
+  const currentCategories = formType === 'thu' ? CATEGORIES_THU : CATEGORIES_CHI;
+
+  // Dropdown outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false); setDropdownSearch('');
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  useEffect(() => {
+    if (dropdownOpen && searchRef.current) searchRef.current.focus();
+  }, [dropdownOpen]);
+
+  function selectProject(id: string) {
+    setActiveProject(id); setDropdownOpen(false); setDropdownSearch('');
+  }
+
+  // ─── Form helpers ─────────────────────────────────
+  function resetForm() {
+    setFormType('chi'); setFormCat(''); setFormDesc('');
+    setFormEstimated(''); setFormActual('');
+    setFormStatus('planned'); setFormNote('');
+    setEditingId(null); setShowDeleteConfirm(false);
+  }
+
+  function openNew(type: 'thu' | 'chi') {
+    resetForm();
+    setFormType(type);
+    setShowModal(true);
+  }
+
+  function openEdit(line: BudgetLine) {
+    setEditingId(line.id);
+    setFormType(line.type);
+    setFormCat(line.category);
+    setFormDesc(line.description);
+    setFormEstimated(formatFullVND(line.estimatedAmount).replace('₫', ''));
+    setFormActual(line.actualAmount > 0 ? formatFullVND(line.actualAmount).replace('₫', '') : '');
+    setFormStatus(line.status);
+    setFormNote(line.note || '');
+    setShowDeleteConfirm(false);
+    setShowModal(true);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const estimated = parseAmount(formEstimated);
+    if (estimated <= 0) return;
+
+    const lineData = {
+      projectId: activeProject,
+      type: formType as 'thu' | 'chi',
+      category: formCat || (formType === 'chi' ? 'khac' : 'thukhac'),
+      description: formDesc || `Dự toán ${formType === 'thu' ? 'thu' : 'chi'}`,
+      estimatedAmount: estimated,
+      actualAmount: parseAmount(formActual),
+      status: formStatus as BudgetLine['status'],
+      note: formNote || undefined,
+    };
+
+    if (editingId) {
+      updateBudgetLine(editingId, lineData);
+    } else {
+      addBudgetLine(lineData);
+    }
+    setShowModal(false);
+    resetForm();
+  }
+
+  function handleDelete() {
+    if (editingId) {
+      deleteBudgetLine(editingId);
+      setShowModal(false);
+      resetForm();
+    }
+  }
+
+  // ─── Render Budget Table ──────────────────────────
+  function renderTable(type: 'thu' | 'chi', lines: BudgetLine[]) {
+    const isThu = type === 'thu';
+    const totEst = lines.reduce((s, b) => s + b.estimatedAmount, 0);
+    const totAct = lines.reduce((s, b) => s + b.actualAmount, 0);
+    const totDiff = totAct - totEst;
+
+    return (
+      <div className="card budget-table-card">
+        <div className="budget-section-header">
+          <h3 className="budget-section-title">
+            <span className={`section-icon ${type}`}>{isThu ? '📥' : '📤'}</span>
+            Dự toán {isThu ? 'thu' : 'chi'} — {project?.name}
+          </h3>
+          <button className="btn btn-ghost btn-sm" onClick={() => openNew(type)}>
+            ＋ Thêm
+          </button>
+        </div>
+        <div className="budget-table">
+          <div className="budget-thead">
+            <span>Danh mục</span><span>Mô tả</span>
+            <span className="bt-right">Dự toán</span><span className="bt-right">Thực tế</span>
+            <span className="bt-right">Chênh lệch</span><span>Trạng thái</span>
+          </div>
+          {lines.map(line => {
+            const cat = catMap[line.category];
+            const diff = line.actualAmount - line.estimatedAmount;
+            return (
+              <div key={line.id} className={`budget-trow ${line.status}`} onClick={() => openEdit(line)}>
+                <span className="bt-cat">{cat?.icon || '📋'} {cat?.name || line.category}</span>
+                <span className="bt-desc">
+                  {line.description}
+                  {line.note && <span className="bt-note">💬 {line.note}</span>}
+                </span>
+                <span className="bt-amount bt-right">{formatVND(line.estimatedAmount)}</span>
+                <span className={`bt-amount bt-right ${line.actualAmount > 0 ? (isThu ? 'text-income' : 'text-expense') : ''}`}>
+                  {line.actualAmount > 0 ? formatVND(line.actualAmount) : '—'}
+                </span>
+                <span className={`bt-diff bt-right ${diff > 0 ? (isThu ? 'text-income' : 'text-danger') : diff < 0 ? (isThu ? 'text-expense' : 'text-income') : ''}`}>
+                  {diff !== 0 ? `${diff > 0 ? '+' : ''}${formatVND(diff)}` : '—'}
+                </span>
+                <span className="bt-status" style={{ color: budgetStatusConfig[line.status]?.color, background: budgetStatusConfig[line.status]?.bg }}>
+                  {budgetStatusConfig[line.status]?.label || line.status}
+                </span>
+              </div>
+            );
+          })}
+
+          {lines.length > 0 && (
+            <div className="budget-trow budget-total-row">
+              <span className="bt-cat" style={{ fontWeight: 800 }}>Tổng cộng</span>
+              <span></span>
+              <span className="bt-amount bt-right" style={{ fontWeight: 800 }}>{formatVND(totEst)}</span>
+              <span className={`bt-amount bt-right ${isThu ? 'text-income' : 'text-expense'}`} style={{ fontWeight: 800 }}>{formatVND(totAct)}</span>
+              <span className={`bt-diff bt-right ${totDiff > 0 ? (isThu ? 'text-income' : 'text-danger') : 'text-income'}`} style={{ fontWeight: 800 }}>
+                {totDiff !== 0 ? `${totDiff > 0 ? '+' : ''}${formatVND(totDiff)}` : '—'}
+              </span>
+              <span></span>
+            </div>
+          )}
+
+          {lines.length === 0 && (
+            <div className="budget-table-empty">
+              Chưa có dòng dự toán {isThu ? 'thu' : 'chi'}
+              <button className="btn btn-ghost btn-sm" onClick={() => openNew(type)} style={{ marginLeft: 12 }}>＋ Thêm</button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="budget-page animate-fade-in">
+
+      {/* ── Project Dropdown ──────────────────────── */}
+      <div className="project-selector" ref={dropdownRef}>
+        <button className={`selector-trigger ${dropdownOpen ? 'open' : ''}`} onClick={() => setDropdownOpen(!dropdownOpen)}>
+          {project ? (
+            <div className="selector-current">
+              <span className="selector-icon">{getStatusLabel(project.status).icon}</span>
+              <div className="selector-info">
+                <span className="selector-name">{project.name}</span>
+                <span className="selector-client">{project.client} • {project.type}</span>
+              </div>
+            </div>
+          ) : (
+            <span className="selector-placeholder">Chọn project...</span>
+          )}
+          <span className={`selector-arrow ${dropdownOpen ? 'up' : ''}`}>▼</span>
+        </button>
+
+        {dropdownOpen && (
+          <div className="selector-dropdown">
+            <div className="selector-search-box">
+              <input ref={searchRef} className="selector-search" type="text"
+                placeholder="🔍 Tìm project hoặc client..." value={dropdownSearch}
+                onChange={e => setDropdownSearch(e.target.value)} />
+            </div>
+            <div className="selector-list">
+              {groups.map(group => (
+                <div key={group.status} className="selector-group">
+                  <div className="selector-group-header">{group.label}</div>
+                  {group.projects.map(p => {
+                    const hasBudget = budgetLines.some(b => b.projectId === p.id);
+                    return (
+                      <button key={p.id} className={`selector-option ${activeProject === p.id ? 'active' : ''}`}
+                        onClick={() => selectProject(p.id)}>
+                        <div className="option-info">
+                          <span className="option-name">{p.name}</span>
+                          <span className="option-client">{p.client}</span>
+                        </div>
+                        <div className="option-meta">
+                          <span className={`option-badge ${hasBudget ? 'has-budget' : 'no-budget'}`}>
+                            {hasBudget ? 'Có dự toán' : 'Chưa có'}
+                          </span>
+                          <span className="option-budget">{formatVND(p.budget)}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+              {groups.length === 0 && (<div className="selector-empty">Không tìm thấy project nào</div>)}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Content ───────────────────────────────── */}
+      {project && (
+        <>
+          {hasBudgetLines ? (
+            <>
+              {/* Summary */}
+              <div className="budget-summary stagger">
+                <div className="budget-sum-card animate-slide-up">
+                  <span className="bsc-label">Dự toán thu</span>
+                  <span className="bsc-value">{formatVND(summary.estThu)}</span>
+                  <div className="bsc-compare">
+                    <span className="bsc-actual text-income">Thực: {formatVND(summary.actThu)}</span>
+                    <span className="bsc-pct">{summary.estThu > 0 ? Math.round((summary.actThu / summary.estThu) * 100) : 0}%</span>
+                  </div>
+                  <div className="bsc-bar"><div className="bsc-bar-fill income" style={{ width: `${summary.estThu > 0 ? Math.min((summary.actThu / summary.estThu) * 100, 100) : 0}%` }} /></div>
+                </div>
+                <div className="budget-sum-card animate-slide-up">
+                  <span className="bsc-label">Dự toán chi</span>
+                  <span className="bsc-value">{formatVND(summary.estChi)}</span>
+                  <div className="bsc-compare">
+                    <span className="bsc-actual text-expense">Thực: {formatVND(summary.actChi)}</span>
+                    <span className={`bsc-pct ${summary.actChi > summary.estChi ? 'text-danger' : ''}`}>
+                      {summary.estChi > 0 ? Math.round((summary.actChi / summary.estChi) * 100) : 0}%
+                    </span>
+                  </div>
+                  <div className="bsc-bar"><div className={`bsc-bar-fill ${summary.actChi > summary.estChi ? 'danger' : 'expense'}`} style={{ width: `${summary.estChi > 0 ? Math.min((summary.actChi / summary.estChi) * 100, 100) : 0}%` }} /></div>
+                </div>
+                <div className="budget-sum-card animate-slide-up">
+                  <span className="bsc-label">Lợi nhuận dự kiến</span>
+                  <span className={`bsc-value ${summary.estProfit >= 0 ? 'text-income' : 'text-expense'}`}>{formatVND(summary.estProfit)}</span>
+                  <div className="bsc-compare">
+                    <span className={`bsc-actual ${summary.actProfit >= 0 ? 'text-income' : 'text-expense'}`}>Thực: {formatVND(summary.actProfit)}</span>
+                  </div>
+                </div>
+                <div className="budget-sum-card animate-slide-up">
+                  <span className="bsc-label">Chênh lệch chi</span>
+                  <span className={`bsc-value ${summary.variance > 0 ? 'text-danger' : summary.variance < 0 ? 'text-income' : ''}`}>
+                    {summary.variance > 0 ? '+' : ''}{formatVND(summary.variance)}
+                  </span>
+                  <span className="bsc-hint">{summary.variance > 0 ? '⚠️ Vượt dự toán' : summary.variance < 0 ? '✅ Tiết kiệm' : '— Đúng dự toán'}</span>
+                </div>
+              </div>
+
+              {/* Tables */}
+              {renderTable('thu', summary.thuLines)}
+              {renderTable('chi', summary.chiLines)}
+            </>
+          ) : (
+            <div className="card budget-empty">
+              <div className="budget-empty-icon">📋</div>
+              <h3>Chưa có dự toán cho {project.name}</h3>
+              <p>Tạo dự toán thu chi để theo dõi ngân sách dự kiến vs thực tế</p>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button className="btn btn-primary" onClick={() => openNew('thu')}>📥 Thêm dự toán thu</button>
+                <button className="btn btn-primary" onClick={() => openNew('chi')}>📤 Thêm dự toán chi</button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── Budget Line Modal ────────────────────── */}
+      {showModal && createPortal(
+        <div className="modal-overlay" onClick={() => { setShowModal(false); resetForm(); }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingId ? '✏️ Sửa dự toán' : '＋ Thêm dự toán'}</h2>
+              <button className="modal-close" onClick={() => { setShowModal(false); resetForm(); }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="txn-form">
+              {/* Type Toggle */}
+              <div className="form-group">
+                <label className="form-label">Loại</label>
+                <div className="type-toggle">
+                  <button type="button" className={`type-btn thu ${formType === 'thu' ? 'active' : ''}`}
+                    onClick={() => { setFormType('thu'); setFormCat(''); }}>📥 THU</button>
+                  <button type="button" className={`type-btn chi ${formType === 'chi' ? 'active' : ''}`}
+                    onClick={() => { setFormType('chi'); setFormCat(''); }}>📤 CHI</button>
+                </div>
+              </div>
+
+              {/* Category */}
+              <div className="form-group">
+                <label className="form-label">Danh mục</label>
+                <div className="cat-grid">
+                  {currentCategories.map(cat => (
+                    <button key={cat.code} type="button" className={`cat-chip ${formCat === cat.code ? 'active' : ''}`}
+                      onClick={() => setFormCat(cat.code)}>
+                      <span className="cat-chip-icon">{cat.icon}</span>
+                      <span className="cat-chip-name">{cat.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="form-group">
+                <label className="form-label">Mô tả</label>
+                <input className="input" type="text" placeholder="VD: Compositing 20 shot, Đặt cọc 50%..."
+                  value={formDesc} onChange={e => setFormDesc(e.target.value)} autoFocus />
+              </div>
+
+              {/* Amounts */}
+              <div className="form-row">
+                <div className="form-group flex-1">
+                  <label className="form-label">Dự toán <span className="form-required">*</span></label>
+                  <input className="input" type="text" placeholder="VD: 45tr, 100k"
+                    value={formEstimated} onChange={e => setFormEstimated(e.target.value)} required />
+                  {formEstimated && parseAmount(formEstimated) > 0 && (
+                    <span className="form-hint amount-preview">= {formatFullVND(parseAmount(formEstimated))}</span>
+                  )}
+                </div>
+                <div className="form-group flex-1">
+                  <label className="form-label">Thực tế</label>
+                  <input className="input" type="text" placeholder="0 nếu chưa phát sinh"
+                    value={formActual} onChange={e => setFormActual(e.target.value)} />
+                  {formActual && parseAmount(formActual) > 0 && (
+                    <span className="form-hint amount-preview">= {formatFullVND(parseAmount(formActual))}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="form-group">
+                <label className="form-label">Trạng thái</label>
+                <div className="status-pills">
+                  {(Object.entries(budgetStatusConfig) as [BudgetLine['status'], typeof budgetStatusConfig[string]][]).map(([key, cfg]) => (
+                    <button key={key} type="button"
+                      className={`status-pill ${formStatus === key ? 'active' : ''}`}
+                      style={{ '--pill-color': cfg.color, '--pill-bg': cfg.bg } as React.CSSProperties}
+                      onClick={() => setFormStatus(key)}>
+                      {cfg.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Note */}
+              <div className="form-group">
+                <label className="form-label">Ghi chú</label>
+                <input className="input" type="text" placeholder="VD: Vượt do re-render..."
+                  value={formNote} onChange={e => setFormNote(e.target.value)} />
+              </div>
+
+              {/* Actions */}
+              <div className="form-actions">
+                {editingId && !showDeleteConfirm && (
+                  <button type="button" className="btn btn-danger-ghost" onClick={() => setShowDeleteConfirm(true)}>🗑️ Xóa</button>
+                )}
+                {showDeleteConfirm && (
+                  <div className="delete-confirm">
+                    <span className="delete-warn">⚠️ Xóa dòng này?</span>
+                    <button type="button" className="btn btn-danger" onClick={handleDelete}>Xóa luôn</button>
+                    <button type="button" className="btn btn-ghost" onClick={() => setShowDeleteConfirm(false)}>Hủy</button>
+                  </div>
+                )}
+                <div className="form-actions-right">
+                  <button type="button" className="btn btn-ghost" onClick={() => { setShowModal(false); resetForm(); }}>Hủy</button>
+                  <button type="submit" className="btn btn-primary" disabled={!formEstimated || parseAmount(formEstimated) <= 0}>
+                    💾 {editingId ? 'Cập nhật' : 'Lưu dự toán'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}

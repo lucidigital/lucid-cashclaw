@@ -1,0 +1,292 @@
+/* ─── Dashboard ──────────────────────────────────────── */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* ─── KPI Grid ───────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-lg);
+}
+
+.kpi-card {
+  background: var(--gradient-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  transition: all var(--transition-normal);
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--kpi-color, var(--brand-primary));
+  opacity: 0.8;
+}
+
+.kpi-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-3px);
+}
+
+.kpi-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+.kpi-icon.income  { background: rgba(0, 184, 148, 0.12); }
+.kpi-icon.expense { background: rgba(225, 112, 85, 0.12); }
+.kpi-icon.profit  { background: rgba(108, 92, 231, 0.12); }
+.kpi-icon.debt    { background: rgba(214, 48, 49, 0.12); }
+.kpi-icon.projects { background: rgba(108, 92, 231, 0.12); }
+
+.kpi-card[style*="--kpi-color: var(--color-danger)"] {
+  cursor: pointer;
+}
+
+.kpi-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.kpi-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.kpi-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ─── Dashboard Grid ────────────────────────────────── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: var(--space-lg);
+}
+
+.dash-card {
+  padding: var(--space-lg);
+}
+
+.dash-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* ─── Health List ────────────────────────────────────── */
+.health-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.health-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr auto;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+}
+
+.health-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.health-client {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: block;
+}
+
+.health-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.health-pct {
+  font-size: 0.8rem;
+  font-weight: 700;
+  min-width: 36px;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+/* ─── Upcoming List ──────────────────────────────────── */
+.upcoming-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.upcoming-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+.upcoming-row:hover {
+  background: var(--bg-card-hover);
+}
+
+.upcoming-date-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  background: rgba(108, 92, 231, 0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.upcoming-day {
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--brand-primary);
+}
+
+.upcoming-month {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.upcoming-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.upcoming-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.upcoming-dot {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.upcoming-amount-box {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+
+.upcoming-amount {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.upcoming-days {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.upcoming-days.soon {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+/* ─── Expense Bars ───────────────────────────────────── */
+.expense-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.expense-bar-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 80px;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.expense-bar-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.expense-bar-track {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.expense-bar-fill {
+  height: 100%;
+  background: var(--gradient-expense);
+  border-radius: 5px;
+  transition: width 0.8s ease;
+}
+
+.expense-bar-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  padding: var(--space-xl);
+  font-style: italic;
+}
+
+/* ─── Responsive ─────────────────────────────────────── */
+@media (max-width: 1400px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 1200px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .dashboard-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .expense-bar-row { grid-template-columns: 100px 1fr 60px; }
+}
