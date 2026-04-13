@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useData } from '../data/DataContext';
 import { PEOPLE_TYPES } from '../data/mockData';
 import type { Person } from '../data/mockData';
+import Modal from '../components/Modal';
 import './People.css';
 
 // ─── Type config map ─────────────────────────────────
@@ -199,109 +200,105 @@ export default function People() {
         </div>
       </div>
 
-      {/* ── Modal ─────────────────────────────────── */}
-      {modalOpen && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeModal()}>
-          <div className="modal-content people-modal">
-            <div className="modal-header">
-              <h2>{editing ? '✏️ Sửa thông tin' : '＋ Thêm nhân sự / đối tác'}</h2>
-              <button className="modal-close" onClick={closeModal}>✕</button>
+      <Modal
+        open={modalOpen}
+        onClose={closeModal}
+        title={editing ? '✏️ Sửa thông tin' : '＋ Thêm nhân sự / đối tác'}
+        footer={
+          deleteConfirm ? (
+            <>
+              <button className="btn btn-ghost" onClick={() => setDeleteConfirm(null)}>Hủy</button>
+              <button className="btn btn-danger" onClick={() => handleDelete(deleteConfirm)} disabled={saving}>
+                {saving ? 'Đang xóa...' : 'Xác nhận xóa'}
+              </button>
+            </>
+          ) : (
+            <>
+              {editing && (
+                <button className="btn-danger-ghost" onClick={() => setDeleteConfirm(editing.id)}>🗑️ Xóa</button>
+              )}
+              <div style={{ flex: 1 }} />
+              <button className="btn btn-ghost" onClick={closeModal}>Hủy</button>
+              <button className="btn btn-primary" onClick={handleSave} disabled={!form.name.trim() || saving}>
+                {saving ? 'Đang lưu...' : editing ? '💾 Cập nhật' : '＋ Thêm'}
+              </button>
+            </>
+          )
+        }
+      >
+        {/* Error banner */}
+        {errorMsg && (
+          <div className="delete-confirm-banner" style={{ background: 'rgba(214,48,49,0.12)', borderColor: 'rgba(214,48,49,0.3)', marginBottom: 16 }}>
+            <span>🚨 {errorMsg}</span>
+            <button className="btn btn-ghost" style={{ marginTop: 8 }} onClick={() => setErrorMsg(null)}>Đóng</button>
+          </div>
+        )}
+
+        {/* Delete confirm */}
+        {deleteConfirm ? (
+          <div className="delete-confirm" style={{ padding: '24px 0' }}>
+            <div className="delete-icon">🗑️</div>
+            <h3>Xóa {editing?.name}?</h3>
+            <p>Hành động này không thể hoàn tác.</p>
+          </div>
+        ) : (
+          <div className="people-form">
+            {/* Tên */}
+            <div className="form-group">
+              <label className="form-label">Tên <span className="form-required">*</span></label>
+              <input className="form-input input" placeholder="VD: Hùng, Sound Studio..." value={form.name} onChange={e => f('name', e.target.value)} autoFocus />
             </div>
 
-            {/* Error banner */}
-            {errorMsg && (
-              <div className="delete-confirm-banner" style={{ background: 'rgba(214,48,49,0.12)', borderColor: 'rgba(214,48,49,0.3)' }}>
-                <span>🚨 {errorMsg}</span>
-                <button className="btn btn-ghost" style={{ marginTop: 8 }} onClick={() => setErrorMsg(null)}>Đóng</button>
-              </div>
-            )}
-
-            {/* Delete confirm */}
-            {deleteConfirm && (
-              <div className="delete-confirm-banner">
-                <span>⚠️ Xóa <strong>{editing?.name}</strong>? Hành động này không thể hoàn tác.</span>
-                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                  <button className="btn btn-danger" onClick={() => handleDelete(deleteConfirm)} disabled={saving}>
-                    {saving ? 'Đang xóa...' : 'Xác nhận xóa'}
+            {/* Danh mục */}
+            <div className="form-group">
+              <label className="form-label">Danh mục <span className="form-required">*</span></label>
+              <div className="ptype-selector">
+                {PEOPLE_TYPES.map(t => (
+                  <button
+                    key={t.code}
+                    className={`ptype-btn ${form.type === t.code ? 'active' : ''}`}
+                    style={form.type === t.code ? { borderColor: t.color, color: t.color, background: `${t.color}18` } : {}}
+                    onClick={() => f('type', t.code)}
+                    type="button"
+                  >
+                    {t.icon} {t.name}
                   </button>
-                  <button className="btn btn-ghost" onClick={() => setDeleteConfirm(null)}>Hủy</button>
-                </div>
+                ))}
               </div>
-            )}
+            </div>
 
-            {!deleteConfirm && (
-              <div className="people-form">
-                {/* Tên */}
-                <div className="form-group">
-                  <label className="form-label">Tên <span className="form-required">*</span></label>
-                  <input className="form-input" placeholder="VD: Hùng, Sound Studio..." value={form.name} onChange={e => f('name', e.target.value)} />
-                </div>
-
-                {/* Danh mục */}
-                <div className="form-group">
-                  <label className="form-label">Danh mục <span className="form-required">*</span></label>
-                  <div className="ptype-selector">
-                    {PEOPLE_TYPES.map(t => (
-                      <button
-                        key={t.code}
-                        className={`ptype-btn ${form.type === t.code ? 'active' : ''}`}
-                        style={form.type === t.code ? { borderColor: t.color, color: t.color, background: `${t.color}18` } : {}}
-                        onClick={() => f('type', t.code)}
-                        type="button"
-                      >
-                        {t.icon} {t.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Vị trí & SĐT */}
-                <div className="form-row">
-                  <div className="form-group flex-1">
-                    <label className="form-label">Vị trí / Loại công việc</label>
-                    <input className="form-input" placeholder="VD: VFX Compositor, Colorist..." value={form.role} onChange={e => f('role', e.target.value)} />
-                  </div>
-                  <div className="form-group flex-1">
-                    <label className="form-label">Số điện thoại</label>
-                    <input className="form-input" placeholder="09xxxxxxxx" value={form.phone} onChange={e => f('phone', e.target.value)} />
-                  </div>
-                </div>
-
-                {/* MST & Ngân hàng */}
-                <div className="form-row">
-                  <div className="form-group flex-1">
-                    <label className="form-label">Mã số thuế</label>
-                    <input className="form-input" placeholder="0312xxxxxx" value={form.taxCode} onChange={e => f('taxCode', e.target.value)} />
-                  </div>
-                  <div className="form-group flex-1">
-                    <label className="form-label">Số TK / Ngân hàng</label>
-                    <input className="form-input" placeholder="VD: VCB - 123456789" value={form.bankInfo} onChange={e => f('bankInfo', e.target.value)} />
-                  </div>
-                </div>
-
-                {/* Note */}
-                <div className="form-group">
-                  <label className="form-label">Ghi chú</label>
-                  <textarea className="form-input form-textarea" rows={2} placeholder="Ghi chú thêm..." value={form.note} onChange={e => f('note', e.target.value)} />
-                </div>
-
-                {/* Actions */}
-                <div className="form-actions">
-                  {editing && (
-                    <button className="btn-danger-ghost" onClick={() => setDeleteConfirm(editing.id)}>🗑️ Xóa</button>
-                  )}
-                  <div className="form-actions-right">
-                    <button className="btn btn-ghost" onClick={closeModal}>Hủy</button>
-                    <button className="btn btn-primary" onClick={handleSave} disabled={!form.name.trim() || saving}>
-                      {saving ? 'Đang lưu...' : editing ? '💾 Cập nhật' : '＋ Thêm'}
-                    </button>
-                  </div>
-                </div>
+            {/* Vị trí & SĐT */}
+            <div className="form-row">
+              <div className="form-group flex-1">
+                <label className="form-label">Vị trí / Loại công việc</label>
+                <input className="form-input input" placeholder="VD: VFX Compositor, Colorist..." value={form.role} onChange={e => f('role', e.target.value)} />
               </div>
-            )}
+              <div className="form-group flex-1">
+                <label className="form-label">Số điện thoại</label>
+                <input className="form-input input" placeholder="09xxxxxxxx" value={form.phone} onChange={e => f('phone', e.target.value)} />
+              </div>
+            </div>
+
+            {/* MST & Ngân hàng */}
+            <div className="form-row">
+              <div className="form-group flex-1">
+                <label className="form-label">Mã số thuế</label>
+                <input className="form-input input" placeholder="0312xxxxxx" value={form.taxCode} onChange={e => f('taxCode', e.target.value)} />
+              </div>
+              <div className="form-group flex-1">
+                <label className="form-label">Số TK / Ngân hàng</label>
+                <input className="form-input input" placeholder="VD: VCB - 123456789" value={form.bankInfo} onChange={e => f('bankInfo', e.target.value)} />
+              </div>
+            </div>
+
+            {/* Note */}
+            <div className="form-group">
+              <label className="form-label">Ghi chú</label>
+              <textarea className="form-input input" rows={2} placeholder="Ghi chú thêm..." value={form.note} onChange={e => f('note', e.target.value)} />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }
