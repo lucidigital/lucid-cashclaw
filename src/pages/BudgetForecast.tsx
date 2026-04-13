@@ -245,7 +245,8 @@ export default function BudgetForecast() {
 
   // ─── Render Chi Table (per-person layout) ─────────
   function renderChiTable(lines: BudgetLine[]) {
-    const DEBT_CATS = ['vay_ung', 'tra_no', 'chi_ung', 'thu_ung'];
+    // Only exclude purely financial categories — tra_no with project IS project expense
+    const NON_PROJECT_CATS = ['vay_ung', 'chi_ung', 'thu_ung'];
 
     // Compute per-line data with auto-computed paid amounts
     const lineData = lines.map(line => {
@@ -254,7 +255,7 @@ export default function BudgetForecast() {
       const PS_CATS = ['ps_nhansu', 'ps_thu'];
       // Auto-compute "đã trả": prioritize budget_line_id match, fallback to person match
       const paidByLineId = transactions
-        .filter(t => t.budgetLineId === line.id && t.type === 'chi' && !DEBT_CATS.includes(t.category))
+        .filter(t => t.budgetLineId === line.id && t.type === 'chi' && !NON_PROJECT_CATS.includes(t.category))
         .reduce((s, t) => s + t.amount, 0);
       const paidByPerson = line.person
         ? transactions
@@ -262,7 +263,7 @@ export default function BudgetForecast() {
               t.projectId === activeProject &&
               t.person === line.person &&
               t.type === 'chi' &&
-              !DEBT_CATS.includes(t.category) &&
+              !NON_PROJECT_CATS.includes(t.category) &&
               !PS_CATS.includes(t.category) &&  // ← loại trừ phát sinh
               !t.budgetLineId
             )
@@ -289,7 +290,7 @@ export default function BudgetForecast() {
     const totPaidLines = lineData.reduce((s, d) => s + d.paid, 0);
 
     const totalActualChi = transactions
-      .filter(t => t.projectId === activeProject && t.type === 'chi' && !DEBT_CATS.includes(t.category))
+      .filter(t => t.projectId === activeProject && t.type === 'chi' && !NON_PROJECT_CATS.includes(t.category))
       .reduce((s, t) => s + t.amount, 0);
 
     // Overflow = max(0, tổng thực tế - tổng dự toán)

@@ -315,10 +315,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const project = projects.find(p => p.id === projectId);
     const psList = phatSinhs.filter(ps => ps.projectId === projectId);
 
-    // Exclude all non-operational categories from project P&L
-    const DEBT_CATS = ['vay_ung', 'tra_no', 'chi_ung', 'thu_ung'];
-    const thuHD = txns.filter(t => t.type === 'thu' && !DEBT_CATS.includes(t.category)).reduce((s, t) => s + t.amount, 0);
-    const chiHD = txns.filter(t => t.type === 'chi' && !DEBT_CATS.includes(t.category)).reduce((s, t) => s + t.amount, 0);
+    // Exclude purely financial categories — tra_no with project IS project chi expense
+    const NON_PROJECT_CATS = ['vay_ung', 'chi_ung', 'thu_ung'];
+    const thuHD = txns.filter(t => t.type === 'thu' && !NON_PROJECT_CATS.includes(t.category)).reduce((s, t) => s + t.amount, 0);
+    const chiHD = txns.filter(t => t.type === 'chi' && !NON_PROJECT_CATS.includes(t.category)).reduce((s, t) => s + t.amount, 0);
     const totalPS = psList.reduce((s, ps) => s + ps.amount, 0);
     const budget = project?.budget || 0;
     const healthHD = budget > 0 ? Math.round((chiHD / budget) * 100) : 0;
@@ -406,7 +406,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [transactions]);
 
   const getReceivablesSummary = useCallback(() => {
-    const DEBT_CATS = ['vay_ung', 'tra_no', 'chi_ung', 'thu_ung'];
+    const NON_PROJECT_CATS = ['vay_ung', 'chi_ung', 'thu_ung'];
 
     // Phải thu: per-project, from budget THU lines vs actual THU transactions
     const receivables = projects
@@ -416,7 +416,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const total = thuLines.reduce((s, b) => s + b.estimatedAmount, 0);
         if (total === 0) return null; // skip projects with no budget thu
         const totalReceived = transactions
-          .filter(t => t.projectId === p.id && t.type === 'thu' && !DEBT_CATS.includes(t.category))
+          .filter(t => t.projectId === p.id && t.type === 'thu' && !NON_PROJECT_CATS.includes(t.category))
           .reduce((s, t) => s + t.amount, 0);
         const outstanding = total - totalReceived;
         return {
@@ -497,14 +497,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       // Paid = chi transactions matching project + person
       // Exclude: debt/advance cats, AND ps_nhansu/ps_thu (phát sinh ≠ payment for original budget)
-      const DEBT_CATS_PAY = ['vay_ung', 'tra_no', 'chi_ung', 'thu_ung', 'ung', 'ungcty'];
+      const NON_PROJECT_CATS_PAY = ['vay_ung', 'chi_ung', 'thu_ung', 'ung', 'ungcty'];
       const PS_CATS = ['ps_nhansu', 'ps_thu'];
       const paid = transactions
         .filter(t =>
           t.projectId === line.projectId &&
           t.person === person &&
           t.type === 'chi' &&
-          !DEBT_CATS_PAY.includes(t.category) &&
+          !NON_PROJECT_CATS_PAY.includes(t.category) &&
           !PS_CATS.includes(t.category)  // ← phát sinh không tính vào đã trả
         )
         .reduce((s, t) => s + t.amount, 0);
