@@ -86,7 +86,7 @@
 /* ─── Finance Stats ──────────────────────────────────── */
 .pc-finance {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--space-sm);
   padding: var(--space-md) 0;
   border-top: 1px solid var(--border-color);

@@ -7,7 +7,7 @@ import './Projects.css';
 
 export default function Projects() {
   const navigate = useNavigate();
-  const { projects, transactions, getProjectTotals } = useData();
+  const { projects, transactions, budgetLines, getProjectTotals } = useData();
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -76,6 +76,12 @@ export default function Projects() {
                 <div className="pc-stat">
                   <span className="pc-stat-label">Hợp đồng</span>
                   <span className="pc-stat-value">{formatVND(totals.budget)}</span>
+                </div>
+                <div className="pc-stat">
+                  <span className="pc-stat-label">Dự toán chi</span>
+                  <span className="pc-stat-value" style={{ color: 'var(--color-warning)' }}>
+                    {formatVND(budgetLines.filter(b => b.projectId === project.id && b.type === 'chi').reduce((s, b) => s + b.estimatedAmount, 0))}
+                  </span>
                 </div>
                 <div className="pc-stat">
                   <span className="pc-stat-label">Đã thu</span>
