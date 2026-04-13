@@ -157,7 +157,7 @@ export function projectToRow(data: Partial<Project>) {
 export function transactionToRow(data: Partial<Transaction>) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const row: Record<string, any> = {};
-  if (data.projectId    !== undefined) row.project_id     = data.projectId;
+  if (data.projectId    !== undefined) row.project_id     = data.projectId || null;
   if (data.type         !== undefined) row.type           = data.type;
   if (data.amount       !== undefined) row.amount         = data.amount;
   if (data.category     !== undefined) row.category       = data.category;
