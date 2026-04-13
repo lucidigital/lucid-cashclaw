@@ -248,13 +248,22 @@ export default function BudgetForecast() {
     // Compute per-line data with auto-computed paid amounts
     const lineData = lines.map(line => {
       const cat = catMap[line.category];
+      // PS categories = phát sinh, should NEVER be credited to a budget line
+      const PS_CATS = ['ps_nhansu', 'ps_thu'];
       // Auto-compute "đã trả": prioritize budget_line_id match, fallback to person match
       const paidByLineId = transactions
         .filter(t => t.budgetLineId === line.id && t.type === 'chi' && !DEBT_CATS.includes(t.category))
         .reduce((s, t) => s + t.amount, 0);
       const paidByPerson = line.person
         ? transactions
-            .filter(t => t.projectId === activeProject && t.person === line.person && t.type === 'chi' && !DEBT_CATS.includes(t.category) && !t.budgetLineId)
+            .filter(t =>
+              t.projectId === activeProject &&
+              t.person === line.person &&
+              t.type === 'chi' &&
+              !DEBT_CATS.includes(t.category) &&
+              !PS_CATS.includes(t.category) &&  // ← loại trừ phát sinh
+              !t.budgetLineId
+            )
             .reduce((s, t) => s + t.amount, 0)
         : 0;
       // Use lineId-matched first; if none, fallback to person-match (for legacy data)
