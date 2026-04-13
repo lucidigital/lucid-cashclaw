@@ -382,21 +382,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [transactions]);
 
   const getReceivablesSummary = useCallback(() => {
+    const DEBT_CATS = ['vay_ung', 'tra_no', 'chi_ung', 'thu_ung'];
+
+    // Phải thu: per-project, from budget THU lines vs actual THU transactions
     const receivables = projects
       .filter(p => p.status !== 'archived')
       .map(p => {
-        const DEBT_CATS = ['vay_ung', 'tra_no', 'chi_ung', 'thu_ung'];
-        const txns = transactions.filter(t => t.projectId === p.id && t.type === 'thu' && !DEBT_CATS.includes(t.category));
-        const totalReceived = txns.reduce((s, t) => s + t.amount, 0);
-        const outstanding = p.budget - totalReceived;
+        const thuLines = budgetLines.filter(b => b.projectId === p.id && b.type === 'thu');
+        const total = thuLines.reduce((s, b) => s + b.estimatedAmount, 0);
+        if (total === 0) return null; // skip projects with no budget thu
+        const totalReceived = transactions
+          .filter(t => t.projectId === p.id && t.type === 'thu' && !DEBT_CATS.includes(t.category))
+          .reduce((s, t) => s + t.amount, 0);
+        const outstanding = total - totalReceived;
         return {
           id: p.id, name: p.client, project: p.name,
           type: 'receivable' as const,
-          total: p.budget, paid: totalReceived, outstanding, status: p.status,
+          total, paid: totalReceived, outstanding, status: p.status,
         };
       })
-      .filter(r => r.outstanding > 0);
+      .filter((r): r is NonNullable<typeof r> => r !== null && r.outstanding > 0);
 
+    // Phải trả: delegated to getPayableSummary in the UI layer
+    // returning empty here; UI uses getPayableSummary directly
     const payables: Array<{
       id: string; name: string; project: string; type: 'payable';
       total: number; paid: number; outstanding: number; status: string;
@@ -407,7 +415,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const netPosition = totalReceivable - totalPayable;
 
     return { receivables, payables, totalReceivable, totalPayable, netPosition };
-  }, [projects, transactions]);
+  }, [projects, budgetLines, transactions]);
 
   const getBudgetSummary = useCallback((projectId: string) => {
     const lines = budgetLines.filter(b => b.projectId === projectId);

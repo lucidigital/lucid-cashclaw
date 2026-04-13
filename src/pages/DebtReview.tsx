@@ -185,30 +185,66 @@ function AdvancesTab({ selected, onSelect }: { selected: string | null; onSelect
 
 // ─── Tab 3: Công nợ (Receivables + Payables) ────────
 function ReceivablesTab() {
-  const { getReceivablesSummary } = useData();
-  const summary = getReceivablesSummary();
+  const { getReceivablesSummary, getPayableSummary, people } = useData();
+  const [payFilter, setPayFilter] = useState<string>('all');
+  const [paySearch, setPaySearch] = useState('');
+
+  const recvSummary = getReceivablesSummary();
+  const paySummary = getPayableSummary();
+
+  // Build a map of person name → type using people list
+  const personTypeMap = Object.fromEntries(people.map(p => [p.name.toLowerCase(), p.type]));
+
+  // People type filter options (mirrors Partners & Staff)
+  const TYPE_FILTERS = [
+    { code: 'all', label: 'Tất cả' },
+    { code: 'staff', label: '👥 Staff' },
+    { code: 'freelance', label: '👤 Freelance' },
+    { code: 'supplier', label: '🏭 Supplier' },
+    { code: 'org', label: '🏦 Tổ chức' },
+  ];
+
+  // Filter + search payables
+  const filteredPayables = paySummary.entries
+    .filter(e => e.outstanding > 0)
+    .filter(e => {
+      if (payFilter === 'all') return true;
+      const type = personTypeMap[e.person.toLowerCase()];
+      return type === payFilter;
+    })
+    .filter(e => {
+      if (!paySearch.trim()) return true;
+      return e.person.toLowerCase().includes(paySearch.toLowerCase());
+    });
+
+  const totalPayableFiltered = filteredPayables.reduce((s, e) => s + e.outstanding, 0);
 
   return (
     <>
       <div className="debt-overview stagger">
-        <StatCard icon="📥" label="Phải thu (client nợ)" value={summary.totalReceivable} sub={`${summary.receivables.length} khoản`} className="borrowed" valueClass="text-income" />
-        <StatCard icon="📤" label="Phải trả (mình nợ)" value={summary.totalPayable} sub={`${summary.payables.length} khoản`} className="remaining" valueClass="text-expense" />
-        <StatCard icon="📊" label="Chênh lệch ròng" value={summary.netPosition} sub={summary.netPosition >= 0 ? '✅ Tích cực' : '⚠️ Âm — cty đang nợ nhiều hơn'}
-          className="repaid" valueClass={summary.netPosition >= 0 ? 'text-income' : 'text-danger'} />
+        <StatCard icon="📥" label="Phải thu (client nợ)" value={recvSummary.totalReceivable}
+          sub={`${recvSummary.receivables.length} job còn nợ`} className="borrowed" valueClass="text-income" />
+        <StatCard icon="📤" label="Phải trả (mình nợ)" value={paySummary.totalOutstanding}
+          sub={`${paySummary.activeCount} người chưa nhận đủ`} className="remaining" valueClass="text-expense" />
+        <StatCard icon="📊" label="Chênh lệch ròng"
+          value={recvSummary.totalReceivable - paySummary.totalOutstanding}
+          sub={(recvSummary.totalReceivable - paySummary.totalOutstanding) >= 0 ? '✅ Tích cực' : '⚠️ Âm — đang nợ nhiều hơn thu'}
+          className="repaid"
+          valueClass={(recvSummary.totalReceivable - paySummary.totalOutstanding) >= 0 ? 'text-income' : 'text-danger'} />
       </div>
 
       <div className="receivables-grid">
-        {/* Phải thu */}
+        {/* ── Phải thu: per-job ──────────────────── */}
         <div className="card recv-card">
-          <h3 className="dash-card-title recv-title receivable">📥 Phải thu — Client còn nợ</h3>
+          <h3 className="dash-card-title recv-title receivable">📥 Phải thu — Client còn nợ theo job</h3>
           <div className="recv-list">
-            {summary.receivables.map(r => (
+            {recvSummary.receivables.map(r => (
               <div key={r.id} className="recv-row">
                 <div className="recv-row-left">
-                  <div className="recv-avatar">🏢</div>
+                  <div className="recv-avatar">🎬</div>
                   <div className="recv-info">
-                    <span className="recv-name">{r.name}</span>
-                    <span className="recv-project">{r.project}</span>
+                    <span className="recv-name">{r.project}</span>
+                    <span className="recv-project">Client: {r.name}</span>
                   </div>
                 </div>
                 <div className="recv-row-right">
@@ -225,56 +261,93 @@ function ReceivablesTab() {
                 </div>
               </div>
             ))}
-            {summary.receivables.length === 0 && (
-              <div className="recv-empty">✅ Tất cả client đã thanh toán đủ</div>
+            {recvSummary.receivables.length === 0 && (
+              <div className="recv-empty">✅ Tất cả job đã thanh toán đủ</div>
             )}
           </div>
           <div className="recv-total-bar receivable">
             <span>Tổng phải thu</span>
-            <span className="text-income" style={{ fontWeight: 800 }}>{formatVND(summary.totalReceivable)}</span>
+            <span className="text-income" style={{ fontWeight: 800 }}>{formatVND(recvSummary.totalReceivable)}</span>
           </div>
         </div>
 
-        {/* Phải trả */}
+        {/* ── Phải trả: per-person with filter + search ── */}
         <div className="card recv-card">
-          <h3 className="dash-card-title recv-title payable">📤 Phải trả — Mình nợ vendor</h3>
+          <h3 className="dash-card-title recv-title payable">📤 Phải trả — Số tiền còn nợ staff/vendor</h3>
+
+          {/* Search */}
+          <div className="recv-search-wrap">
+            <span className="recv-search-icon">🔍</span>
+            <input
+              className="recv-search-input"
+              placeholder="Tìm tên staff, freelance..."
+              value={paySearch}
+              onChange={e => setPaySearch(e.target.value)}
+            />
+          </div>
+
+          {/* Filter pills by type */}
+          <div className="recv-filter-pills">
+            {TYPE_FILTERS.map(f => (
+              <button
+                key={f.code}
+                className={`recv-pill ${payFilter === f.code ? 'active' : ''}`}
+                onClick={() => setPayFilter(f.code)}
+              >
+                {f.label}
+                {f.code !== 'all' && (
+                  <span className="recv-pill-count">
+                    {paySummary.entries.filter(e => e.outstanding > 0 && (personTypeMap[e.person.toLowerCase()] || 'staff') === f.code).length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
           <div className="recv-list">
-            {summary.payables.map(p => (
-              <div key={p.id} className="recv-row">
-                <div className="recv-row-left">
-                  <div className="recv-avatar">👤</div>
-                  <div className="recv-info">
-                    <span className="recv-name">{p.name}</span>
-                    <span className="recv-project">{p.project}</span>
+            {filteredPayables.map(e => {
+              const personType = personTypeMap[e.person.toLowerCase()] || 'staff';
+              const typeIcon = { staff: '👥', freelance: '👤', supplier: '🏭', org: '🏦' }[personType] || '👤';
+              return (
+                <div key={e.person} className="recv-row">
+                  <div className="recv-row-left">
+                    <div className="recv-avatar">{typeIcon}</div>
+                    <div className="recv-info">
+                      <span className="recv-name">{e.person}</span>
+                      <span className="recv-project">{e.jobs.map(j => j.projectName).join(', ')}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="recv-row-right">
-                  <div className="recv-amounts">
-                    <span className="recv-total">HĐ: {formatVND(p.total)}</span>
-                    <span className="recv-paid text-expense">Đã trả: {formatVND(p.paid)}</span>
-                  </div>
-                  <div className="recv-outstanding-box">
-                    <span className="recv-outstanding text-expense">{formatVND(p.outstanding)}</span>
-                    <div className="debt-progress">
-                      <div className="debt-progress-fill expense" style={{ width: `${p.total > 0 ? Math.round((p.paid / p.total) * 100) : 0}%` }} />
+                  <div className="recv-row-right">
+                    <div className="recv-amounts">
+                      <span className="recv-total">HĐ: {formatVND(e.totalContract)}</span>
+                      <span className="recv-paid text-expense">Đã trả: {formatVND(e.totalPaid)}</span>
+                    </div>
+                    <div className="recv-outstanding-box">
+                      <span className="recv-outstanding text-expense">{formatVND(e.outstanding)}</span>
+                      <div className="debt-progress">
+                        <div className="debt-progress-fill expense"
+                          style={{ width: `${e.totalContract > 0 ? Math.round((e.totalPaid / e.totalContract) * 100) : 0}%` }} />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            {summary.payables.length === 0 && (
-              <div className="recv-empty">✅ Không nợ vendor nào</div>
+              );
+            })}
+            {filteredPayables.length === 0 && (
+              <div className="recv-empty">✅ Không còn nợ ai trong mục này</div>
             )}
           </div>
           <div className="recv-total-bar payable">
-            <span>Tổng phải trả</span>
-            <span className="text-expense" style={{ fontWeight: 800 }}>{formatVND(summary.totalPayable)}</span>
+            <span>Tổng phải trả {payFilter !== 'all' || paySearch ? '(đang lọc)' : ''}</span>
+            <span className="text-expense" style={{ fontWeight: 800 }}>{formatVND(totalPayableFiltered)}</span>
           </div>
         </div>
       </div>
     </>
   );
 }
+
+
 
 // ─── Shared Components ──────────────────────────────
 function StatCard({ icon, label, value, sub, className, valueClass }: {

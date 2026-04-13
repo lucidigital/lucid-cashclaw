@@ -543,3 +543,70 @@
 .debt-progress-fill.expense {
   background: var(--gradient-expense);
 }
+
+/* ─── Payable Search + Filter Pills ─────────────────── */
+.recv-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(255,255,255,0.02);
+}
+
+.recv-search-icon { font-size: 0.9rem; opacity: 0.5; flex-shrink: 0; }
+
+.recv-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 0.88rem;
+  outline: none;
+}
+.recv-search-input::placeholder { color: var(--text-muted); }
+
+.recv-filter-pills {
+  display: flex;
+  gap: 6px;
+  padding: var(--space-sm) var(--space-lg);
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.recv-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-family);
+  transition: all var(--transition-fast);
+}
+
+.recv-pill:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.recv-pill.active {
+  background: rgba(108, 92, 231, 0.15);
+  border-color: var(--brand-primary);
+  color: var(--text-primary);
+}
+
+.recv-pill-count {
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
