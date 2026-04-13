@@ -175,10 +175,32 @@ export default function BudgetForecast() {
     }
   }
 
-  // ─── Render Thu Table (original layout, label tweak) ──
+  // ─── Render Thu Table ──────────────────────────────
   function renderThuTable(lines: BudgetLine[]) {
-    const totEst = lines.reduce((s, b) => s + b.estimatedAmount, 0);
-    const totAct = lines.reduce((s, b) => s + b.actualAmount, 0);
+    // Auto-compute received per line from transactions
+    // Priority 1: budgetLineId match, Priority 2: projectId + category + description match
+    const lineData = lines.map(line => {
+      const byLineId = transactions
+        .filter(t => t.budgetLineId === line.id && t.type === 'thu')
+        .reduce((s, t) => s + t.amount, 0);
+
+      const byMatch = byLineId === 0
+        ? transactions.filter(t =>
+            t.projectId === line.projectId &&
+            t.type === 'thu' &&
+            t.category === line.category &&
+            !t.budgetLineId &&
+            t.description.toLowerCase().trim() === line.description.toLowerCase().trim()
+          ).reduce((s, t) => s + t.amount, 0)
+        : 0;
+
+      const actualThu = byLineId + byMatch;
+      const diff = actualThu - line.estimatedAmount;
+      return { ...line, actualThu, diff, isLinkedById: byLineId > 0, isLinkedByDesc: byMatch > 0 };
+    });
+
+    const totEst = lineData.reduce((s, d) => s + d.estimatedAmount, 0);
+    const totAct = lineData.reduce((s, d) => s + d.actualThu, 0);
     const totDiff = totAct - totEst;
 
     return (
@@ -199,28 +221,32 @@ export default function BudgetForecast() {
             <span className="bt-right">Dự toán</span><span className="bt-right">Đã thu</span>
             <span className="bt-right">Chênh lệch</span><span>Trạng thái</span>
           </div>
-          {lines.map(line => {
+          {lineData.map(line => {
             const cat = catMap[line.category];
-            const diff = line.actualAmount - line.estimatedAmount;
             return (
               <div key={line.id} className={`budget-trow budget-thu-row ${line.status}`} onClick={() => openEdit(line)}>
                 <span className="bt-cat">{cat?.icon || '📋'} {cat?.name || line.category}</span>
                 <span className="bt-desc">
                   {line.description}
+                  {(line.isLinkedById || line.isLinkedByDesc) && (
+                    <span className="bt-note" style={{ color: 'var(--color-income)' }}>
+                      {line.isLinkedById ? '🔗 Gắn theo ID' : '🔗 Khớp mô tả'}
+                    </span>
+                  )}
                   {line.note && <span className="bt-note">💬 {line.note}</span>}
                 </span>
                 <span className="bt-date">
                   {line.expectedDate
                     ? (() => {
                         const d = new Date(line.expectedDate);
-                        const diff = Math.ceil((d.getTime() - Date.now()) / 86_400_000);
+                        const daysLeft = Math.ceil((d.getTime() - Date.now()) / 86_400_000);
                         return (
                           <>
                             <span style={{ display: 'block', fontWeight: 600 }}>
                               {d.toLocaleDateString('vi', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                             </span>
-                            <span style={{ fontSize: '0.7rem', color: diff < 0 ? 'var(--color-danger)' : diff <= 7 ? 'var(--color-warning)' : 'var(--text-muted)' }}>
-                              {diff < 0 ? `⚠️ quá ${Math.abs(diff)}ng` : diff === 0 ? '📌 Hôm nay' : `📌 ${diff} ngày`}
+                            <span style={{ fontSize: '0.7rem', color: daysLeft < 0 ? 'var(--color-danger)' : daysLeft <= 7 ? 'var(--color-warning)' : 'var(--text-muted)' }}>
+                              {daysLeft < 0 ? `⚠️ quá ${Math.abs(daysLeft)}ng` : daysLeft === 0 ? '📌 Hôm nay' : `📌 ${daysLeft} ngày`}
                             </span>
                           </>
                         );
@@ -228,11 +254,11 @@ export default function BudgetForecast() {
                     : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                 </span>
                 <span className="bt-amount bt-right">{formatVND(line.estimatedAmount)}</span>
-                <span className={`bt-amount bt-right ${line.actualAmount > 0 ? 'text-income' : ''}`}>
-                  {line.actualAmount > 0 ? formatVND(line.actualAmount) : '—'}
+                <span className={`bt-amount bt-right ${line.actualThu > 0 ? 'text-income' : ''}`}>
+                  {line.actualThu > 0 ? formatVND(line.actualThu) : '—'}
                 </span>
-                <span className={`bt-diff bt-right ${diff > 0 ? 'text-income' : diff < 0 ? 'text-expense' : ''}`}>
-                  {diff !== 0 ? `${diff > 0 ? '+' : ''}${formatVND(diff)}` : '—'}
+                <span className={`bt-diff bt-right ${line.diff > 0 ? 'text-income' : line.diff < 0 ? 'text-expense' : ''}`}>
+                  {line.diff !== 0 ? `${line.diff > 0 ? '+' : ''}${formatVND(line.diff)}` : '—'}
                 </span>
                 <span className="bt-status" style={{ color: budgetStatusConfig[line.status]?.color, background: budgetStatusConfig[line.status]?.bg }}>
                   {budgetStatusConfig[line.status]?.label || line.status}
@@ -241,7 +267,7 @@ export default function BudgetForecast() {
             );
           })}
 
-          {lines.length > 0 && (
+          {lineData.length > 0 && (
             <div className="budget-trow budget-thu-row budget-total-row">
               <span className="bt-cat" style={{ fontWeight: 800 }}>Tổng cộng</span>
               <span></span>

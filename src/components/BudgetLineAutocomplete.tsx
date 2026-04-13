@@ -110,12 +110,12 @@ export default function BudgetLineAutocomplete({
       {/* Linked indicator */}
       {isLinked && (
         <span className="form-hint pac-hint-linked">
-          ✅ Gắn vào dự toán chi — sẽ được tính vào phần theo dõi
+          ✅ Gắn vào dự toán — sẽ được tính vào phần theo dõi
         </span>
       )}
       {!isLinked && value.trim().length > 0 && (
         <span className="form-hint pac-hint-overflow">
-          ⚠️ Mô tả tự do — sẽ tính vào Chi phí phát sinh (overflow)
+          ⚠️ Mô tả tự do — không gắn vào dự toán nào
         </span>
       )}
 
@@ -124,7 +124,7 @@ export default function BudgetLineAutocomplete({
           {/* Budget line suggestions */}
           {filtered.length > 0 && (
             <>
-              <div className="pac-section-label">📋 Chọn từ dự toán chi</div>
+              <div className="pac-section-label">📋 Chọn từ dự toán</div>
               {filtered.map(bl => (
                 <button
                   key={bl.id}
@@ -157,13 +157,13 @@ export default function BudgetLineAutocomplete({
               <span className="pac-option-avatar" style={{ background: '#e17055' }}>⚠️</span>
               <span className="pac-option-info">
                 <span className="pac-option-name">Dùng "{value.trim()}" (tự do)</span>
-                <span className="pac-option-role">Sẽ tính vào Chi phí phát sinh</span>
+                <span className="pac-option-role">Không gắn vào dự toán nào</span>
               </span>
             </button>
           )}
 
           {filtered.length === 0 && value.trim().length === 0 && (
-            <div className="pac-empty">Chưa có dự toán chi cho lựa chọn này</div>
+            <div className="pac-empty">Chưa có dự toán cho lựa chọn này</div>
           )}
         </div>
       )}

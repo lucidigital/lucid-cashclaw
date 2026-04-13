@@ -57,13 +57,22 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
   }, [type, isEdit]);
 
   // Budget lines for current project + person (for Chi autocomplete)
-  const filteredBudgetLines = useMemo(() =>
+  const filteredChiBudgetLines = useMemo(() =>
     budgetLines.filter(bl =>
       bl.projectId === projectId &&
       bl.type === 'chi' &&
       (!person || !bl.person || bl.person.toLowerCase() === person.toLowerCase())
     ),
     [budgetLines, projectId, person]
+  );
+
+  // Budget lines for current project (for Thu autocomplete)
+  const filteredThuBudgetLines = useMemo(() =>
+    budgetLines.filter(bl =>
+      bl.projectId === projectId &&
+      bl.type === 'thu'
+    ),
+    [budgetLines, projectId]
   );
 
   const parseAmount = (val: string): number => {
@@ -83,7 +92,7 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
       category: category || (type === 'chi' ? 'khac' : 'thukhac'),
       projectId,
       person: person.trim() || undefined,
-      budgetLineId: type === 'chi' ? budgetLineId : undefined,
+      budgetLineId,
       description: description.trim(),
       date,
     };
@@ -190,8 +199,16 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
             value={description}
             budgetLineId={budgetLineId}
             onChange={(desc, lineId) => { setDescription(desc); setBudgetLineId(lineId); }}
-            budgetLines={filteredBudgetLines}
+            budgetLines={filteredChiBudgetLines}
             placeholder="Chọn từ dự toán hoặc ghi tự do..."
+          />
+        ) : projectId && filteredThuBudgetLines.length > 0 ? (
+          <BudgetLineAutocomplete
+            value={description}
+            budgetLineId={budgetLineId}
+            onChange={(desc, lineId) => { setDescription(desc); setBudgetLineId(lineId); }}
+            budgetLines={filteredThuBudgetLines}
+            placeholder="Chọn từ dự toán thu hoặc ghi tự do..."
           />
         ) : (
           <textarea
