@@ -63,32 +63,24 @@ export const PROJECT_TYPES = [
 
 // ─── Categories ─────────────────────────────────────
 export const CATEGORIES_THU = [
-  { code: 'dot', icon: '💵', name: 'Thanh toán đợt' },
-  { code: 'full', icon: '✅', name: 'Thanh toán full' },
-  { code: 'ps', icon: '⚠️', name: 'Phát sinh (thu)' },
-  { code: 'ung', icon: '🏦', name: 'Vay / Ứng (nhận)' },
-  { code: 'ungcty', icon: '💵', name: 'Thu lại ứng' },
-  { code: 'thukhac', icon: '💰', name: 'Thu khác' },
+  { code: 'dot',      icon: '💵', name: 'Thanh toán đợt' },
+  { code: 'full',     icon: '✅', name: 'Thanh toán full' },
+  { code: 'ps_thu',   icon: '⚠️', name: 'Phát sinh (thu)' },
+  { code: 'vay_ung',  icon: '🏦', name: 'Vay / Ứng (nhận)' },
+  { code: 'thu_ung',  icon: '🔄', name: 'Thu lại ứng' },
+  { code: 'thu_khac', icon: '💰', name: 'Thu khác' },
 ];
 
 export const CATEGORIES_CHI = [
-  { code: 'comp', icon: '🎨', name: 'Compositing / VFX' },
-  { code: 'color', icon: '🎬', name: 'Color Grade / DI' },
-  { code: 'roto', icon: '✂️', name: 'Roto / Prep' },
-  { code: 'render', icon: '🖥️', name: 'Render / Cloud' },
-  { code: 'sound', icon: '🔊', name: 'Sound / Music' },
-  { code: '3d', icon: '📐', name: '3D / CG' },
-  { code: 'edit', icon: '✏️', name: 'Edit / Offline' },
-  { code: 'free', icon: '👤', name: 'Freelancer khác' },
-  { code: 'soft', icon: '💻', name: 'Software / License' },
-  { code: 'hw', icon: '🖥️', name: 'Hardware / Storage' },
-  { code: 'vanhanh', icon: '🏢', name: 'Vận hành' },
-  { code: 'ship', icon: '🚗', name: 'Vận chuyển' },
-  { code: 'anuong', icon: '🍜', name: 'Ăn uống' },
-  { code: 'ps', icon: '⚠️', name: 'Phát sinh (chi)' },
-  { code: 'ung', icon: '🏦', name: 'Hoàn trả nợ' },
-  { code: 'ungcty', icon: '💵', name: 'Ứng trước nhân viên' },
-  { code: 'khac', icon: '📋', name: 'Chi khác' },
+  { code: 'nhansu',    icon: '👥', name: 'Chi nhân sự' },
+  { code: 'freelance', icon: '👤', name: 'Chi freelance' },
+  { code: 'ps_nhansu', icon: '⚠️', name: 'Chi nhân sự phát sinh' },
+  { code: 'chi_khac',  icon: '📋', name: 'Chi dự toán khác' },
+  { code: 'chi_ung',   icon: '💸', name: 'Chi ứng' },
+  { code: 'tra_no',    icon: '🏦', name: 'Chi trả nợ' },
+  { code: 'thue',      icon: '📋', name: 'Chi thuế' },
+  { code: 'vanhanh',   icon: '🏢', name: 'Chi vận hành' },
+  { code: 'khac',      icon: '📦', name: 'Chi khác' },
 ];
 
 // ─── Mock Projects ──────────────────────────────────

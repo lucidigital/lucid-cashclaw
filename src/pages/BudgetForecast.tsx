@@ -144,7 +144,7 @@ export default function BudgetForecast() {
       projectId: activeProject,
       person: formPerson || undefined,
       type: formType as 'thu' | 'chi',
-      category: formCat || (formType === 'chi' ? 'khac' : 'thukhac'),
+      category: formCat || (formType === 'chi' ? 'khac' : 'thu_khac'),
       description: formDesc || `Dự toán ${formType === 'thu' ? 'thu' : 'chi'}`,
       estimatedAmount: estimated,
       actualAmount: parseAmount(formActual),
