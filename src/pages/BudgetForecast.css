@@ -536,6 +536,27 @@
   opacity: 0.8;
 }
 
+/* ─── Overflow / Phát sinh Row ───────────────────── */
+.budget-overflow-row {
+  background: rgba(253, 203, 110, 0.06) !important;
+  border-top: 1px dashed rgba(253, 203, 110, 0.3) !important;
+  border-bottom: 1px dashed rgba(253, 203, 110, 0.3) !important;
+  cursor: default !important;
+}
+.budget-overflow-row:hover {
+  background: rgba(253, 203, 110, 0.10) !important;
+}
+.bt-overflow-label {
+  color: var(--color-warning) !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
+}
+.bt-overflow-desc {
+  color: var(--text-muted) !important;
+  font-style: italic;
+  font-size: 0.78rem !important;
+}
+
 .text-warning {
   color: var(--color-warning) !important;
 }

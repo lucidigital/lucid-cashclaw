@@ -242,13 +242,15 @@ export default function BudgetForecast() {
 
   // ─── Render Chi Table (per-person layout) ─────────
   function renderChiTable(lines: BudgetLine[]) {
+    const DEBT_CATS = ['vay_ung', 'tra_no', 'chi_ung', 'thu_ung'];
+
     // Compute per-line data with auto-computed paid amounts
     const lineData = lines.map(line => {
       const cat = catMap[line.category];
       // Auto-compute "đã trả" from transactions
       const paid = line.person
         ? transactions
-            .filter(t => t.projectId === activeProject && t.person === line.person && t.type === 'chi' && t.category !== 'ung' && t.category !== 'ungcty')
+            .filter(t => t.projectId === activeProject && t.person === line.person && t.type === 'chi' && !DEBT_CATS.includes(t.category))
             .reduce((s, t) => s + t.amount, 0)
         : line.actualAmount;
       // Phát sinh for this person + project
@@ -263,11 +265,31 @@ export default function BudgetForecast() {
       return { ...line, cat, paid, ps, totalContract, outstanding, pct };
     });
 
-    const totEst = lineData.reduce((s, d) => s + d.estimatedAmount, 0);
-    const totPS = lineData.reduce((s, d) => s + d.ps, 0);
-    const totContract = lineData.reduce((s, d) => s + d.totalContract, 0);
-    const totPaid = lineData.reduce((s, d) => s + d.paid, 0);
-    const totOutstanding = totContract - totPaid;
+    // ── Overflow row: tổng chi thực tế vượt ngoài dự toán ─
+    const totEst       = lineData.reduce((s, d) => s + d.estimatedAmount, 0);
+    const totPS        = lineData.reduce((s, d) => s + d.ps, 0);
+    const totContract  = lineData.reduce((s, d) => s + d.totalContract, 0);
+    const totPaidLines = lineData.reduce((s, d) => s + d.paid, 0);
+
+    // All chi transactions for project, excluding debt/advance
+    const allChiTxns = transactions.filter(
+      t => t.projectId === activeProject && t.type === 'chi' && !DEBT_CATS.includes(t.category)
+    );
+    const totalActualChi = allChiTxns.reduce((s, t) => s + t.amount, 0);
+
+    // Phần chi chưa được gắn vào bất kỳ budget line nào (không match tên người)
+    const personNames = new Set(lines.map(l => l.person).filter(Boolean));
+    const unattributedChi = allChiTxns
+      .filter(t => !t.person || !personNames.has(t.person))
+      .reduce((s, t) => s + t.amount, 0);
+
+    // Overflow = max(0, tổng chi thực tế - tổng dự toán)
+    const overflowPaid = Math.max(0, totalActualChi - totEst);
+    const hasOverflow  = overflowPaid > 0;
+
+    // Grand totals include overflow row
+    const grandTotPaid        = totPaidLines + (hasOverflow ? overflowPaid : 0);
+    const grandTotOutstanding = totContract - grandTotPaid;
 
     return (
       <div className="card budget-table-card">
@@ -313,6 +335,24 @@ export default function BudgetForecast() {
             </div>
           ))}
 
+          {/* ── Overflow row: chi phí phát sinh chưa dự toán ── */}
+          {hasOverflow && (
+            <div className="budget-trow budget-chi-row budget-overflow-row">
+              <span className="bt-person bt-overflow-label">⚠️ Chi phí phát sinh</span>
+              <span className="bt-cat">—</span>
+              <span className="bt-desc bt-overflow-desc">Chi thực tế vượt ngoài dự toán</span>
+              <span className="bt-amount bt-right">—</span>
+              <span className="bt-amount bt-right">—</span>
+              <span className="bt-amount bt-right">—</span>
+              <span className="bt-amount bt-right text-warning" style={{ fontWeight: 700 }}>
+                {formatVND(overflowPaid)}
+              </span>
+              <span className="bt-amount bt-right text-danger" style={{ fontWeight: 700 }}>
+                {formatVND(-overflowPaid)}
+              </span>
+            </div>
+          )}
+
           {lineData.length > 0 && (
             <div className="budget-trow budget-chi-row budget-total-row">
               <span className="bt-person" style={{ fontWeight: 800 }}>Tổng cộng</span>
@@ -323,9 +363,9 @@ export default function BudgetForecast() {
                 {totPS > 0 ? `+${formatVND(totPS)}` : '—'}
               </span>
               <span className="bt-amount bt-right" style={{ fontWeight: 800 }}>{formatVND(totContract)}</span>
-              <span className="bt-amount bt-right text-income" style={{ fontWeight: 800 }}>{formatVND(totPaid)}</span>
-              <span className={`bt-amount bt-right ${totOutstanding > 0 ? 'text-danger' : 'text-income'}`} style={{ fontWeight: 800 }}>
-                {formatVND(totOutstanding)}
+              <span className="bt-amount bt-right text-income" style={{ fontWeight: 800 }}>{formatVND(grandTotPaid)}</span>
+              <span className={`bt-amount bt-right ${grandTotOutstanding > 0 ? 'text-danger' : 'text-income'}`} style={{ fontWeight: 800 }}>
+                {formatVND(grandTotOutstanding)}
               </span>
             </div>
           )}
