@@ -19,6 +19,7 @@ export default function Dashboard() {
 
   // ─── Debt KPI ─────────────────────────────────────
   const debtSummary = getDebtSummary();
+  const activeProjects = projects.filter(p => p.status === 'in_progress' || p.status === 'review');
   const nonArchivedProjects = projects.filter(p => p.status !== 'archived');
 
   // ─── Tổng Dự Thu KPI = tất cả project budget (completed + active) ───
