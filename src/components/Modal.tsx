@@ -1,5 +1,6 @@
 // ─── Base Modal Component ───────────────────────────
 import { useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import './Modal.css';
 
 interface ModalProps {
@@ -33,7 +34,7 @@ export default function Modal({ open, onClose, title, icon, wide, children, foot
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={`modal-panel ${wide ? 'wide' : ''}`}>
         <div className="modal-header">
@@ -49,6 +50,7 @@ export default function Modal({ open, onClose, title, icon, wide, children, foot
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
