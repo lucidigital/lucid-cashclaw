@@ -231,7 +231,53 @@
 .people-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-md);
+}
+
+.people-form .form-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.people-form .form-required {
+  color: var(--color-danger);
+  margin-left: 2px;
+}
+
+.people-form .form-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  transition: border-color var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.people-form .form-input:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+}
+
+.people-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.people-form .flex-1 { flex: 1; }
+
+.people-form textarea.form-input {
+  resize: vertical;
+  min-height: 60px;
 }
 
 /* Type selector buttons */
