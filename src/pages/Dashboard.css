@@ -8,7 +8,7 @@
 /* ─── KPI Grid ───────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: var(--space-lg);
 }
 
@@ -77,15 +77,21 @@
 }
 
 .kpi-value {
-  font-size: 1.6rem;
+  font-size: 1.3rem;
   font-weight: 800;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .kpi-sub {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ─── Dashboard Grid ────────────────────────────────── */
@@ -93,6 +99,81 @@
   display: grid;
   grid-template-columns: 1.2fr 1fr;
   gap: var(--space-lg);
+}
+
+/* ─── Forecast Row ───────────────────────────────────── */
+.forecast-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+}
+
+.forecast-card {
+  background: var(--gradient-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.forecast-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.forecast-card.thu::before { background: var(--color-income); }
+.forecast-card.chi::before { background: var(--color-expense); }
+.forecast-card.net::before { background: var(--brand-primary); }
+
+.forecast-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+.forecast-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  background: rgba(108, 92, 231, 0.1);
+}
+.forecast-card.thu .forecast-icon { background: rgba(0, 184, 148, 0.12); }
+.forecast-card.chi .forecast-icon { background: rgba(225, 112, 85, 0.12); }
+
+.forecast-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.forecast-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.forecast-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.forecast-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 3px;
 }
 
 .dash-card {
@@ -279,14 +360,17 @@
 /* ─── Responsive ─────────────────────────────────────── */
 @media (max-width: 1400px) {
   .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .forecast-row { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 1200px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .forecast-row { grid-template-columns: 1fr 1fr; }
   .dashboard-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
   .kpi-grid { grid-template-columns: 1fr; }
+  .forecast-row { grid-template-columns: 1fr; }
   .expense-bar-row { grid-template-columns: 100px 1fr 60px; }
 }

@@ -5,7 +5,7 @@ import './Dashboard.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { projects, transactions, milestones, getProjectTotals, getDebtSummary } = useData();
+  const { projects, transactions, budgetLines, milestones, getProjectTotals, getDebtSummary } = useData();
 
   // ─── Calculate KPIs ───────────────────────────────
   const allThu = transactions
@@ -16,16 +16,70 @@ export default function Dashboard() {
     .reduce((s, t) => s + t.amount, 0);
   const profit = allThu - allChi;
   const profitMargin = allThu > 0 ? Math.round((profit / allThu) * 100) : 0;
-  const activeProjects = projects.filter(p => p.status === 'in_progress' || p.status === 'review').length;
 
   // ─── Debt KPI ─────────────────────────────────────
   const debtSummary = getDebtSummary();
+  const activeProjects = projects.filter(p => p.status === 'in_progress' || p.status === 'review');
+  const activeProjectIds = new Set(activeProjects.map(p => p.id));
+  const nonArchivedProjects = projects.filter(p => p.status !== 'archived');
 
-  // ─── Upcoming milestones ──────────────────────────
-  const upcoming = milestones
-    .filter(m => m.status === 'pending')
-    .sort((a, b) => new Date(a.expectedDate).getTime() - new Date(b.expectedDate).getTime())
-    .slice(0, 5);
+  // ─── Tổng Dự Thu KPI = tất cả project budget (completed + active) ───
+  const tongDuThuTatCa = nonArchivedProjects.reduce((s, p) => s + (p.budget || 0), 0);
+  const tongDuThuConLaiTatCa = tongDuThuTatCa - nonArchivedProjects.reduce((s, p) => {
+    const received = transactions
+      .filter(t => t.projectId === p.id && t.type === 'thu')
+      .reduce((ss, t) => ss + t.amount, 0);
+    return s + received;
+  }, 0);
+
+  // ─── Dự Thu HĐ = tổng budget của các job đang làm (active only) ───
+  const duThuHD = activeProjects.reduce((s, p) => s + (p.budget || 0), 0);
+  const duThuHDConLai = activeProjects.reduce((s, p) => {
+    const received = transactions
+      .filter(t => t.projectId === p.id && t.type === 'thu')
+      .reduce((ss, t) => ss + t.amount, 0);
+    return s + Math.max(0, (p.budget || 0) - received);
+  }, 0);
+
+  // ─── Tổng Dự Chi = ALL budget_lines type=chi (tất cả project) ───
+  const allChiLines = budgetLines.filter(bl => bl.type === 'chi');
+  const tongDuChi = allChiLines.reduce((s, bl) => s + bl.estimatedAmount, 0);
+  const tongDuChiConLai = allChiLines.reduce((s, bl) => {
+    const paid = transactions
+      .filter(t => t.budgetLineId === bl.id && t.type === 'chi')
+      .reduce((ss, t) => ss + t.amount, 0);
+    return s + Math.max(0, bl.estimatedAmount - paid);
+  }, 0);
+
+  // ─── Dòng tiền sắp tới ───
+  // Dựa theo budget_lines thu (active), fallback → project.budget (active)
+  const thuLines = budgetLines.filter(bl => bl.type === 'thu' && activeProjectIds.has(bl.projectId));
+  const upcomingCashFlow: Array<{ projectName: string; label: string; remaining: number; hasLine: boolean }> = [];
+
+  for (const proj of activeProjects) {
+    const projThuLines = thuLines.filter(bl => bl.projectId === proj.id);
+    if (projThuLines.length > 0) {
+      for (const bl of projThuLines) {
+        const received = transactions
+          .filter(t => t.budgetLineId === bl.id && t.type === 'thu')
+          .reduce((ss, t) => ss + t.amount, 0);
+        const remaining = bl.estimatedAmount - received;
+        if (remaining > 0) {
+          upcomingCashFlow.push({ projectName: proj.name, label: bl.description || bl.category, remaining, hasLine: true });
+        }
+      }
+    } else if ((proj.budget || 0) > 0) {
+      const totalReceived = transactions
+        .filter(t => t.projectId === proj.id && t.type === 'thu')
+        .reduce((ss, t) => ss + t.amount, 0);
+      const remaining = (proj.budget || 0) - totalReceived;
+      if (remaining > 0) {
+        upcomingCashFlow.push({ projectName: proj.name, label: 'Budget (chưa có dự thu)', remaining, hasLine: false });
+      }
+    }
+  }
+  upcomingCashFlow.sort((a, b) => b.remaining - a.remaining);
+
 
   // ─── Chi by category ─────────────────────────────
   const chiByCategory: Record<string, number> = {};
@@ -77,6 +131,14 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <div className="kpi-card animate-slide-up" style={{ '--kpi-color': 'var(--color-income)' } as React.CSSProperties}>
+          <div className="kpi-icon" style={{ background: 'rgba(0,184,148,0.15)' }}>📊</div>
+          <div className="kpi-body">
+            <span className="kpi-label">Tổng Dự Thu</span>
+            <span className="kpi-value text-income">{formatVND(Math.max(0, tongDuThuConLaiTatCa))}</span>
+            <span className="kpi-sub">tổng HĐ: {formatVND(tongDuThuTatCa)}</span>
+          </div>
+        </div>
         <div className="kpi-card animate-slide-up" style={{ '--kpi-color': 'var(--color-danger)' } as React.CSSProperties}
           onClick={() => navigate('/debt')}
         >
@@ -94,8 +156,41 @@ export default function Dashboard() {
           <div className="kpi-icon projects">📁</div>
           <div className="kpi-body">
             <span className="kpi-label">Projects</span>
-            <span className="kpi-value" style={{ color: 'var(--brand-primary)' }}>{activeProjects}</span>
+            <span className="kpi-value" style={{ color: 'var(--brand-primary)' }}>{activeProjects.length}</span>
             <span className="kpi-sub">{projects.length} total</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="forecast-row stagger">
+        <div className="forecast-card thu">
+          <div className="forecast-icon">📥</div>
+          <div className="forecast-body">
+            <span className="forecast-label">Dự Thu HĐ (active jobs)</span>
+            <span className="forecast-value text-income">{formatVND(duThuHDConLai)}</span>
+            <span className="forecast-sub">tổng budget: {formatVND(duThuHD)}</span>
+          </div>
+        </div>
+        <div className="forecast-card chi">
+          <div className="forecast-icon">📤</div>
+          <div className="forecast-body">
+            <span className="forecast-label">Tổng Dự Chi (all jobs)</span>
+            <span className="forecast-value text-expense">{formatVND(tongDuChi)}</span>
+            <span className="forecast-sub">
+              Chưa trả: <strong className="text-expense">{formatVND(tongDuChiConLai)}</strong>
+            </span>
+          </div>
+        </div>
+        <div className="forecast-card net">
+          <div className="forecast-icon">📊</div>
+          <div className="forecast-body">
+            <span className="forecast-label">Dự lãi ườc tính</span>
+            <span className={`forecast-value ${tongDuThuTatCa - tongDuChi >= 0 ? 'text-income' : 'text-expense'}`}>
+              {formatVND(tongDuThuTatCa - tongDuChi)}
+            </span>
+            <span className="forecast-sub">
+              {tongDuThuTatCa > 0 ? Math.round(((tongDuThuTatCa - tongDuChi) / tongDuThuTatCa) * 100) : 0}% margin dự kiến
+            </span>
           </div>
         </div>
       </div>
@@ -134,35 +229,29 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Upcoming Payments */}
+        {/* Upcoming Cash Flow */}
         <div className="card dash-card">
           <h3 className="dash-card-title">📅 Dòng tiền sắp tới</h3>
           <div className="upcoming-list">
-            {upcoming.map(m => {
-              const project = projects.find(p => p.id === m.projectId);
-              const date = new Date(m.expectedDate);
-              const daysDiff = Math.ceil((date.getTime() - Date.now()) / 86_400_000);
-              return (
-                <div key={m.id} className="upcoming-row">
-                  <div className="upcoming-date-badge">
-                    <span className="upcoming-day">{date.getDate()}</span>
-                    <span className="upcoming-month">{date.toLocaleDateString('vi', { month: 'short' })}</span>
-                  </div>
-                  <div className="upcoming-info">
-                    <span className="upcoming-name">{project?.name}</span>
-                    <span className="upcoming-dot">Đợt {m.dot} • {m.percentage}%</span>
-                  </div>
-                  <div className="upcoming-amount-box">
-                    <span className="upcoming-amount text-income">{formatVND(m.amount)}</span>
-                    <span className={`upcoming-days ${daysDiff <= 7 ? 'soon' : ''}`}>
-                      {daysDiff <= 0 ? 'Hôm nay!' : `${daysDiff} ngày`}
-                    </span>
-                  </div>
+            {upcomingCashFlow.slice(0, 6).map((item, idx) => (
+              <div key={idx} className="upcoming-row">
+                <div className="upcoming-date-badge" style={{ background: item.hasLine ? 'var(--color-income)20' : 'var(--color-muted)20' }}>
+                  <span style={{ fontSize: '1.2rem' }}>{item.hasLine ? '💵' : '📁'}</span>
                 </div>
-              );
-            })}
-            {upcoming.length === 0 && (
-              <div className="empty-state">Không có khoản thu sắp tới</div>
+                <div className="upcoming-info">
+                  <span className="upcoming-name">{item.projectName}</span>
+                  <span className="upcoming-dot">{item.label}</span>
+                </div>
+                <div className="upcoming-amount-box">
+                  <span className="upcoming-amount text-income">{formatVND(item.remaining)}</span>
+                  <span className="upcoming-days" style={{ color: item.hasLine ? 'var(--color-income)' : 'var(--color-muted)' }}>
+                    {item.hasLine ? 'chưa nhận' : 'budget'}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {upcomingCashFlow.length === 0 && (
+              <div className="empty-state">Tất cả các job đều đã thu đủ ! ✅</div>
             )}
           </div>
         </div>
