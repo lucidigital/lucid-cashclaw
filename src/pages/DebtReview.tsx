@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { formatVND, formatFullVND, type Transaction } from '../data/mockData';
 import { useData } from '../data/DataContext';
 import Modal from '../components/Modal';
+import PersonAutocomplete from '../components/PersonAutocomplete';
 import './DebtReview.css';
 
 type TabId = 'debts' | 'advances' | 'receivables';
@@ -229,7 +230,11 @@ function DebtsTab({ selected, onSelect }: { selected: string | null; onSelect: (
 
           <div className="form-group">
             <label className="form-label">Tên chủ nợ <span className="form-required">*</span></label>
-            <input className="input" placeholder="VD: Ngân hàng VCB, Anh Tuấn..." value={formPerson} onChange={e => setFormPerson(e.target.value)} required />
+            <PersonAutocomplete
+              value={formPerson}
+              onChange={setFormPerson}
+              placeholder="VD: Ngân hàng VCB, Anh Tuấn..."
+            />
           </div>
 
           <div className="form-group">
