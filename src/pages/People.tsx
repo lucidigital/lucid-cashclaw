@@ -18,7 +18,7 @@ export default function People() {
 
   // ─── UI State ────────────────────────────────────
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Person | null>(null);
   const [form, setForm] = useState(emptyForm());
@@ -30,7 +30,7 @@ export default function People() {
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return people.filter(p => {
-      const matchType = typeFilter === 'all' || p.type === typeFilter;
+      const matchType = typeFilter.size === 0 || typeFilter.has(p.type);
       const matchSearch = !q || [p.name, p.role, p.phone, p.taxCode].some(
         v => v?.toLowerCase().includes(q)
       );
@@ -132,17 +132,24 @@ export default function People() {
       {/* ── Filter Pills ──────────────────────────── */}
       <div className="people-filters">
         <button
-          className={`ptype-pill ${typeFilter === 'all' ? 'active' : ''}`}
-          onClick={() => setTypeFilter('all')}
+          className={`ptype-pill ${typeFilter.size === 0 ? 'active' : ''}`}
+          onClick={() => setTypeFilter(new Set())}
         >
           Tất cả <span className="pill-count">{counts.all}</span>
         </button>
         {PEOPLE_TYPES.map(t => (
           <button
             key={t.code}
-            className={`ptype-pill ${typeFilter === t.code ? 'active' : ''}`}
-            style={typeFilter === t.code ? { borderColor: t.color, color: t.color, background: `${t.color}18` } : {}}
-            onClick={() => setTypeFilter(t.code)}
+            className={`ptype-pill ${typeFilter.has(t.code) ? 'active' : ''}`}
+            style={typeFilter.has(t.code) ? { borderColor: t.color, color: t.color, background: `${t.color}18` } : {}}
+            onClick={() => {
+              setTypeFilter(prev => {
+                const next = new Set(prev);
+                if (next.has(t.code)) next.delete(t.code);
+                else next.add(t.code);
+                return next;
+              });
+            }}
           >
             {t.icon} {t.name} <span className="pill-count">{counts[t.code] || 0}</span>
           </button>
@@ -164,7 +171,7 @@ export default function People() {
 
           {filtered.length === 0 ? (
             <div className="people-empty">
-              {search || typeFilter !== 'all'
+              {search || typeFilter.size > 0
                 ? '😔 Không tìm thấy kết quả phù hợp'
                 : 'Chưa có nhân sự / đối tác nào. Bấm "+ Thêm mới" để bắt đầu!'}
             </div>
