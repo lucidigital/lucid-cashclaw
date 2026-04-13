@@ -24,9 +24,7 @@
   width: 100%;
   max-width: 560px;
   max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
   animation: modalSlideIn 0.3s ease;
   box-shadow: var(--shadow-lg);
 }
@@ -46,8 +44,9 @@
   justify-content: space-between;
   padding: var(--space-lg);
   border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
   background: var(--bg-secondary);
-  flex-shrink: 0;
   z-index: 1;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
@@ -82,9 +81,6 @@
 
 .modal-body {
   padding: var(--space-lg);
-  flex: 1 1 0;
-  overflow-y: auto;
-  min-height: 0;
 }
 
 .modal-footer {
@@ -93,8 +89,9 @@
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-lg);
   border-top: 1px solid var(--border-color);
+  position: sticky;
+  bottom: 0;
   background: var(--bg-secondary);
-  flex-shrink: 0;
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
