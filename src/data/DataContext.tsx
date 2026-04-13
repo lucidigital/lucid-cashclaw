@@ -552,12 +552,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updatePerson = useCallback(async (id: string, updates: Partial<Person>) => {
+    // Find old name for cascade rename
+    const oldPerson = people.find(p => p.id === id);
+    const oldName = oldPerson?.name;
+    const newName = updates.name;
+    const isRenaming = oldName && newName && oldName !== newName;
+
+    // 1. Update people table
     const row = personToRow(updates);
     const { error: err } = await supabase
       .from('people').update(row).eq('id', id);
     if (err) throw err;
     setPeople(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
-  }, []);
+
+    // 2. Cascade rename across all related tables
+    if (isRenaming) {
+      const cascadeTables = [
+        { table: 'transactions', col: 'person' },
+        { table: 'budget_lines', col: 'person' },
+        { table: 'manual_debts', col: 'person' },
+        { table: 'debt_entries', col: 'name' },
+        { table: 'phat_sinhs', col: 'person' },
+      ];
+      await Promise.all(cascadeTables.map(async ({ table, col }) => {
+        try {
+          await supabase.from(table).update({ [col]: newName }).eq(col, oldName);
+        } catch { /* soft fail — column may not exist */ }
+      }));
+
+      // Update local state
+      setTransactions(prev => prev.map(t => t.person === oldName ? { ...t, person: newName } : t));
+      setBudgetLines(prev => prev.map(bl => bl.person === oldName ? { ...bl, person: newName } : bl));
+      setManualDebts(prev => prev.map(md => md.person === oldName ? { ...md, person: newName } : md));
+      setDebtEntries(prev => prev.map(de => de.name === oldName ? { ...de, name: newName } : de));
+      setPhatSinhs(prev => prev.map(ps => ps.person === oldName ? { ...ps, person: newName } : ps));
+    }
+  }, [people]);
 
   const deletePerson = useCallback(async (id: string) => {
     const { error: err } = await supabase
