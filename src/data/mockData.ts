@@ -41,6 +41,7 @@ export interface PaymentMilestone {
 export interface PhatSinh {
   id: string;
   projectId: string;
+  person?: string;              // Person/org this phat sinh relates to
   amount: number;
   description: string;
   status: 'pending' | 'approved' | 'paid';

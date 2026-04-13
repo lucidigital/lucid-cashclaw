@@ -47,7 +47,7 @@ function parseAmount(raw: string): number {
 }
 
 export default function BudgetForecast() {
-  const { projects, budgetLines, addBudgetLine, updateBudgetLine, deleteBudgetLine } = useData();
+  const { projects, transactions, phatSinhs, budgetLines, addBudgetLine, updateBudgetLine, deleteBudgetLine } = useData();
   const defaultProject = projects.find(p => p.status === 'in_progress');
   const [activeProject, setActiveProject] = useState(defaultProject?.id || '');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -66,6 +66,7 @@ export default function BudgetForecast() {
   const [formDesc, setFormDesc] = useState('');
   const [formEstimated, setFormEstimated] = useState('');
   const [formActual, setFormActual] = useState('');
+  const [formPerson, setFormPerson] = useState('');
   const [formStatus, setFormStatus] = useState<BudgetLine['status']>('planned');
   const [formNote, setFormNote] = useState('');
 
@@ -109,7 +110,7 @@ export default function BudgetForecast() {
   // ─── Form helpers ─────────────────────────────────
   function resetForm() {
     setFormType('chi'); setFormCat(''); setFormDesc('');
-    setFormEstimated(''); setFormActual('');
+    setFormEstimated(''); setFormActual(''); setFormPerson('');
     setFormStatus('planned'); setFormNote('');
     setEditingId(null); setShowDeleteConfirm(false);
   }
@@ -125,6 +126,7 @@ export default function BudgetForecast() {
     setFormType(line.type);
     setFormCat(line.category);
     setFormDesc(line.description);
+    setFormPerson(line.person || '');
     setFormEstimated(formatFullVND(line.estimatedAmount).replace('₫', ''));
     setFormActual(line.actualAmount > 0 ? formatFullVND(line.actualAmount).replace('₫', '') : '');
     setFormStatus(line.status);
@@ -140,6 +142,7 @@ export default function BudgetForecast() {
 
     const lineData = {
       projectId: activeProject,
+      person: formPerson || undefined,
       type: formType as 'thu' | 'chi',
       category: formCat || (formType === 'chi' ? 'khac' : 'thukhac'),
       description: formDesc || `Dự toán ${formType === 'thu' ? 'thu' : 'chi'}`,
@@ -166,9 +169,8 @@ export default function BudgetForecast() {
     }
   }
 
-  // ─── Render Budget Table ──────────────────────────
-  function renderTable(type: 'thu' | 'chi', lines: BudgetLine[]) {
-    const isThu = type === 'thu';
+  // ─── Render Thu Table (original layout, label tweak) ──
+  function renderThuTable(lines: BudgetLine[]) {
     const totEst = lines.reduce((s, b) => s + b.estimatedAmount, 0);
     const totAct = lines.reduce((s, b) => s + b.actualAmount, 0);
     const totDiff = totAct - totEst;
@@ -177,17 +179,17 @@ export default function BudgetForecast() {
       <div className="card budget-table-card">
         <div className="budget-section-header">
           <h3 className="budget-section-title">
-            <span className={`section-icon ${type}`}>{isThu ? '📥' : '📤'}</span>
-            Dự toán {isThu ? 'thu' : 'chi'} — {project?.name}
+            <span className="section-icon thu">📥</span>
+            Dự toán thu — {project?.name}
           </h3>
-          <button className="btn btn-ghost btn-sm" onClick={() => openNew(type)}>
+          <button className="btn btn-ghost btn-sm" onClick={() => openNew('thu')}>
             ＋ Thêm
           </button>
         </div>
         <div className="budget-table">
           <div className="budget-thead">
             <span>Danh mục</span><span>Mô tả</span>
-            <span className="bt-right">Dự toán</span><span className="bt-right">Thực tế</span>
+            <span className="bt-right">Dự toán</span><span className="bt-right">Đã thu</span>
             <span className="bt-right">Chênh lệch</span><span>Trạng thái</span>
           </div>
           {lines.map(line => {
@@ -201,10 +203,10 @@ export default function BudgetForecast() {
                   {line.note && <span className="bt-note">💬 {line.note}</span>}
                 </span>
                 <span className="bt-amount bt-right">{formatVND(line.estimatedAmount)}</span>
-                <span className={`bt-amount bt-right ${line.actualAmount > 0 ? (isThu ? 'text-income' : 'text-expense') : ''}`}>
+                <span className={`bt-amount bt-right ${line.actualAmount > 0 ? 'text-income' : ''}`}>
                   {line.actualAmount > 0 ? formatVND(line.actualAmount) : '—'}
                 </span>
-                <span className={`bt-diff bt-right ${diff > 0 ? (isThu ? 'text-income' : 'text-danger') : diff < 0 ? (isThu ? 'text-expense' : 'text-income') : ''}`}>
+                <span className={`bt-diff bt-right ${diff > 0 ? 'text-income' : diff < 0 ? 'text-expense' : ''}`}>
                   {diff !== 0 ? `${diff > 0 ? '+' : ''}${formatVND(diff)}` : '—'}
                 </span>
                 <span className="bt-status" style={{ color: budgetStatusConfig[line.status]?.color, background: budgetStatusConfig[line.status]?.bg }}>
@@ -219,8 +221,8 @@ export default function BudgetForecast() {
               <span className="bt-cat" style={{ fontWeight: 800 }}>Tổng cộng</span>
               <span></span>
               <span className="bt-amount bt-right" style={{ fontWeight: 800 }}>{formatVND(totEst)}</span>
-              <span className={`bt-amount bt-right ${isThu ? 'text-income' : 'text-expense'}`} style={{ fontWeight: 800 }}>{formatVND(totAct)}</span>
-              <span className={`bt-diff bt-right ${totDiff > 0 ? (isThu ? 'text-income' : 'text-danger') : 'text-income'}`} style={{ fontWeight: 800 }}>
+              <span className="bt-amount bt-right text-income" style={{ fontWeight: 800 }}>{formatVND(totAct)}</span>
+              <span className={`bt-diff bt-right ${totDiff > 0 ? 'text-income' : 'text-danger'}`} style={{ fontWeight: 800 }}>
                 {totDiff !== 0 ? `${totDiff > 0 ? '+' : ''}${formatVND(totDiff)}` : '—'}
               </span>
               <span></span>
@@ -229,8 +231,109 @@ export default function BudgetForecast() {
 
           {lines.length === 0 && (
             <div className="budget-table-empty">
-              Chưa có dòng dự toán {isThu ? 'thu' : 'chi'}
-              <button className="btn btn-ghost btn-sm" onClick={() => openNew(type)} style={{ marginLeft: 12 }}>＋ Thêm</button>
+              Chưa có dòng dự toán thu
+              <button className="btn btn-ghost btn-sm" onClick={() => openNew('thu')} style={{ marginLeft: 12 }}>＋ Thêm</button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Render Chi Table (per-person layout) ─────────
+  function renderChiTable(lines: BudgetLine[]) {
+    // Compute per-line data with auto-computed paid amounts
+    const lineData = lines.map(line => {
+      const cat = catMap[line.category];
+      // Auto-compute "đã trả" from transactions
+      const paid = line.person
+        ? transactions
+            .filter(t => t.projectId === activeProject && t.person === line.person && t.type === 'chi' && t.category !== 'ung' && t.category !== 'ungcty')
+            .reduce((s, t) => s + t.amount, 0)
+        : line.actualAmount;
+      // Phát sinh for this person + project
+      const ps = line.person
+        ? phatSinhs
+            .filter(p => p.projectId === activeProject && p.person === line.person)
+            .reduce((s, p) => s + p.amount, 0)
+        : 0;
+      const totalContract = line.estimatedAmount + ps;
+      const outstanding = totalContract - paid;
+      const pct = totalContract > 0 ? Math.round((paid / totalContract) * 100) : 0;
+      return { ...line, cat, paid, ps, totalContract, outstanding, pct };
+    });
+
+    const totEst = lineData.reduce((s, d) => s + d.estimatedAmount, 0);
+    const totPS = lineData.reduce((s, d) => s + d.ps, 0);
+    const totContract = lineData.reduce((s, d) => s + d.totalContract, 0);
+    const totPaid = lineData.reduce((s, d) => s + d.paid, 0);
+    const totOutstanding = totContract - totPaid;
+
+    return (
+      <div className="card budget-table-card">
+        <div className="budget-section-header">
+          <h3 className="budget-section-title">
+            <span className="section-icon chi">📤</span>
+            Dự toán chi — {project?.name}
+          </h3>
+          <button className="btn btn-ghost btn-sm" onClick={() => openNew('chi')}>
+            ＋ Thêm
+          </button>
+        </div>
+        <div className="budget-table budget-chi-table">
+          <div className="budget-thead budget-chi-thead">
+            <span>Người / Tổ chức</span>
+            <span>Danh mục</span>
+            <span>Nội dung</span>
+            <span className="bt-right">Dự toán</span>
+            <span className="bt-right">+PS</span>
+            <span className="bt-right">Tổng HĐ</span>
+            <span className="bt-right">Đã trả</span>
+            <span className="bt-right">Còn nợ</span>
+          </div>
+          {lineData.map(d => (
+            <div key={d.id} className={`budget-trow budget-chi-row ${d.outstanding <= 0 ? 'settled' : ''}`} onClick={() => openEdit(d)}>
+              <span className="bt-person">{d.person || '—'}</span>
+              <span className="bt-cat">{d.cat?.icon || '📋'} {d.cat?.name || d.category}</span>
+              <span className="bt-desc">
+                {d.description}
+                {d.note && <span className="bt-note">💬 {d.note}</span>}
+              </span>
+              <span className="bt-amount bt-right">{formatVND(d.estimatedAmount)}</span>
+              <span className={`bt-amount bt-right ${d.ps > 0 ? 'text-warning' : ''}`}>
+                {d.ps > 0 ? `+${formatVND(d.ps)}` : '—'}
+              </span>
+              <span className="bt-amount bt-right" style={{ fontWeight: 700 }}>{formatVND(d.totalContract)}</span>
+              <span className={`bt-amount bt-right ${d.paid > 0 ? 'text-income' : ''}`}>
+                {d.paid > 0 ? formatVND(d.paid) : '—'}
+              </span>
+              <span className={`bt-amount bt-right ${d.outstanding > 0 ? 'text-danger' : d.outstanding === 0 ? 'text-income' : ''}`} style={{ fontWeight: 700 }}>
+                {d.outstanding > 0 ? formatVND(d.outstanding) : d.outstanding === 0 ? '✅ 0' : formatVND(d.outstanding)}
+              </span>
+            </div>
+          ))}
+
+          {lineData.length > 0 && (
+            <div className="budget-trow budget-chi-row budget-total-row">
+              <span className="bt-person" style={{ fontWeight: 800 }}>Tổng cộng</span>
+              <span></span>
+              <span></span>
+              <span className="bt-amount bt-right" style={{ fontWeight: 800 }}>{formatVND(totEst)}</span>
+              <span className={`bt-amount bt-right ${totPS > 0 ? 'text-warning' : ''}`} style={{ fontWeight: 800 }}>
+                {totPS > 0 ? `+${formatVND(totPS)}` : '—'}
+              </span>
+              <span className="bt-amount bt-right" style={{ fontWeight: 800 }}>{formatVND(totContract)}</span>
+              <span className="bt-amount bt-right text-income" style={{ fontWeight: 800 }}>{formatVND(totPaid)}</span>
+              <span className={`bt-amount bt-right ${totOutstanding > 0 ? 'text-danger' : 'text-income'}`} style={{ fontWeight: 800 }}>
+                {formatVND(totOutstanding)}
+              </span>
+            </div>
+          )}
+
+          {lines.length === 0 && (
+            <div className="budget-table-empty">
+              Chưa có dòng dự toán chi
+              <button className="btn btn-ghost btn-sm" onClick={() => openNew('chi')} style={{ marginLeft: 12 }}>＋ Thêm</button>
             </div>
           )}
         </div>
@@ -339,8 +442,8 @@ export default function BudgetForecast() {
               </div>
 
               {/* Tables */}
-              {renderTable('thu', summary.thuLines)}
-              {renderTable('chi', summary.chiLines)}
+              {renderThuTable(summary.thuLines)}
+              {renderChiTable(summary.chiLines)}
             </>
           ) : (
             <div className="card budget-empty">
@@ -391,11 +494,21 @@ export default function BudgetForecast() {
                 </div>
               </div>
 
+              {/* Person (Chi only) */}
+              {formType === 'chi' && (
+                <div className="form-group">
+                  <label className="form-label">Người / Tổ chức <span className="form-required">*</span></label>
+                  <input className="input" type="text" placeholder="VD: Trung Ca, Studio XYZ, Thuế TNCN..."
+                    value={formPerson} onChange={e => setFormPerson(e.target.value)} autoFocus />
+                  <span className="form-hint">Tên chính xác để match với Transactions</span>
+                </div>
+              )}
+
               {/* Description */}
               <div className="form-group">
                 <label className="form-label">Mô tả</label>
                 <input className="input" type="text" placeholder="VD: Compositing 20 shot, Đặt cọc 50%..."
-                  value={formDesc} onChange={e => setFormDesc(e.target.value)} autoFocus />
+                  value={formDesc} onChange={e => setFormDesc(e.target.value)} />
               </div>
 
               {/* Amounts */}

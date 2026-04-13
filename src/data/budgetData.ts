@@ -6,6 +6,7 @@
 export interface BudgetLine {
   id: string;
   projectId: string;
+  person?: string;              // Person or organization name (for chi lines)
   type: 'thu' | 'chi';
   category: string;
   description: string;

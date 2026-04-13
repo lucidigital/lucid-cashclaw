@@ -89,6 +89,22 @@ interface DataContextType {
     estThu: number; actThu: number; estChi: number; actChi: number;
     estProfit: number; actProfit: number; variance: number;
   };
+  getPayableSummary: () => {
+    entries: Array<{
+      person: string;
+      totalEstimated: number;
+      totalPhatSinh: number;
+      totalContract: number;
+      totalPaid: number;
+      outstanding: number;
+      jobs: Array<{ projectId: string; projectName: string; estimated: number; phatSinh: number; paid: number }>;
+    }>;
+    totalEstimated: number;
+    totalPhatSinh: number;
+    totalPaid: number;
+    totalOutstanding: number;
+    activeCount: number;
+  };
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -385,14 +401,87 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const estThu = thuLines.reduce((s, b) => s + b.estimatedAmount, 0);
     const actThu = thuLines.reduce((s, b) => s + b.actualAmount, 0);
     const estChi = chiLines.reduce((s, b) => s + b.estimatedAmount, 0);
-    const actChi = chiLines.reduce((s, b) => s + b.actualAmount, 0);
+    
+    // Auto-compute actChi: for chi lines with person, sum matching transactions
+    let actChi = 0;
+    chiLines.forEach(line => {
+      if (line.person) {
+        // Auto-compute from transactions matching project + person + chi
+        const paid = transactions
+          .filter(t => t.projectId === projectId && t.person === line.person && t.type === 'chi' && t.category !== 'ung' && t.category !== 'ungcty')
+          .reduce((s, t) => s + t.amount, 0);
+        actChi += paid;
+      } else {
+        // Fallback to manual actualAmount for lines without person
+        actChi += line.actualAmount;
+      }
+    });
 
     const estProfit = estThu - estChi;
     const actProfit = actThu - actChi;
     const variance = actChi - estChi;
 
     return { thuLines, chiLines, estThu, actThu, estChi, actChi, estProfit, actProfit, variance };
-  }, [budgetLines]);
+  }, [budgetLines, transactions]);
+
+  // ─── Payable Summary (Công nợ — per person) ────────
+  const getPayableSummary = useCallback(() => {
+    // Get all chi budget lines that have a person
+    const personLines = budgetLines.filter(b => b.type === 'chi' && b.person);
+    const byPerson: Record<string, {
+      totalEstimated: number;
+      totalPhatSinh: number;
+      totalPaid: number;
+      jobs: Array<{ projectId: string; projectName: string; estimated: number; phatSinh: number; paid: number }>;
+    }> = {};
+
+    personLines.forEach(line => {
+      const person = line.person!;
+      if (!byPerson[person]) byPerson[person] = { totalEstimated: 0, totalPhatSinh: 0, totalPaid: 0, jobs: [] };
+
+      const project = projects.find(p => p.id === line.projectId);
+      const projectName = project?.name || 'Unknown';
+
+      // Phát sinh for this person + project
+      const personPS = phatSinhs
+        .filter(ps => ps.projectId === line.projectId && ps.person === person)
+        .reduce((s, ps) => s + ps.amount, 0);
+
+      // Paid = transactions matching project + person + chi (excluding ung/ungcty)
+      const paid = transactions
+        .filter(t => t.projectId === line.projectId && t.person === person && t.type === 'chi' && t.category !== 'ung' && t.category !== 'ungcty')
+        .reduce((s, t) => s + t.amount, 0);
+
+      byPerson[person].totalEstimated += line.estimatedAmount;
+      byPerson[person].totalPhatSinh += personPS;
+      byPerson[person].totalPaid += paid;
+      byPerson[person].jobs.push({
+        projectId: line.projectId,
+        projectName,
+        estimated: line.estimatedAmount,
+        phatSinh: personPS,
+        paid,
+      });
+    });
+
+    const entries = Object.entries(byPerson).map(([person, data]) => ({
+      person,
+      totalEstimated: data.totalEstimated,
+      totalPhatSinh: data.totalPhatSinh,
+      totalContract: data.totalEstimated + data.totalPhatSinh,
+      totalPaid: data.totalPaid,
+      outstanding: data.totalEstimated + data.totalPhatSinh - data.totalPaid,
+      jobs: data.jobs,
+    }));
+
+    const totalEstimated = entries.reduce((s, e) => s + e.totalEstimated, 0);
+    const totalPhatSinh = entries.reduce((s, e) => s + e.totalPhatSinh, 0);
+    const totalPaid = entries.reduce((s, e) => s + e.totalPaid, 0);
+    const totalOutstanding = entries.reduce((s, e) => s + e.outstanding, 0);
+    const activeCount = entries.filter(e => e.outstanding > 0).length;
+
+    return { entries, totalEstimated, totalPhatSinh, totalPaid, totalOutstanding, activeCount };
+  }, [budgetLines, transactions, phatSinhs, projects]);
 
   return (
     <DataContext.Provider value={{
@@ -404,7 +493,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addPhatSinh, updatePhatSinh, deletePhatSinh,
       addBudgetLine, updateBudgetLine, deleteBudgetLine,
       getProjectTotals, getDebtSummary, getAdvanceSummary,
-      getReceivablesSummary, getBudgetSummary,
+      getReceivablesSummary, getBudgetSummary, getPayableSummary,
     }}>
       {children}
     </DataContext.Provider>

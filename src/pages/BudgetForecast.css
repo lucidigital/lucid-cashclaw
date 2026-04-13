@@ -513,3 +513,29 @@
   font-style: italic;
   font-size: 0.85rem;
 }
+
+/* ─── Chi Table (Person-based, 8 columns) ────────── */
+.budget-chi-thead {
+  grid-template-columns: 140px 130px 1fr 100px 80px 110px 100px 100px !important;
+}
+
+.budget-chi-row {
+  grid-template-columns: 140px 130px 1fr 100px 80px 110px 100px 100px !important;
+}
+
+.bt-person {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--brand-primary);
+}
+
+.budget-chi-row.settled {
+  opacity: 0.5;
+}
+.budget-chi-row.settled:hover {
+  opacity: 0.8;
+}
+
+.text-warning {
+  color: var(--color-warning) !important;
+}

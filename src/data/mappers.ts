@@ -77,6 +77,7 @@ export function rowToPhatSinh(row: Record<string, any>): PhatSinh {
   return {
     id: row.id,
     projectId: row.project_id,
+    person: row.person || undefined,
     amount: row.amount,
     description: row.description,
     status: row.status,
@@ -99,6 +100,7 @@ export function rowToBudgetLine(row: Record<string, any>): BudgetLine {
   return {
     id: row.id,
     projectId: row.project_id,
+    person: row.person || undefined,
     type: row.type,
     category: row.category,
     description: row.description,
