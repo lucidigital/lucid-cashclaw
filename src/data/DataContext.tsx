@@ -6,10 +6,10 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import { supabase } from './supabaseClient';
 import {
   rowToProject, rowToTransaction, rowToMilestone, rowToPhatSinh,
-  rowToDebtEntry, rowToBudgetLine,
-  projectToRow, transactionToRow, milestoneToRow, phatSinhToRow, budgetLineToRow,
+  rowToDebtEntry, rowToBudgetLine, rowToPerson,
+  projectToRow, transactionToRow, milestoneToRow, phatSinhToRow, budgetLineToRow, personToRow,
 } from './mappers';
-import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry } from './mockData';
+import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, Person } from './mockData';
 import type { BudgetLine } from './budgetData';
 
 // ─── Context Type (unchanged from Phase A) ──────────
@@ -50,6 +50,12 @@ interface DataContextType {
   addBudgetLine: (bl: Omit<BudgetLine, 'id'>) => Promise<void>;
   updateBudgetLine: (id: string, updates: Partial<BudgetLine>) => Promise<void>;
   deleteBudgetLine: (id: string) => Promise<void>;
+
+  // People
+  people: Person[];
+  addPerson: (p: Omit<Person, 'id' | 'createdAt'>) => Promise<Person>;
+  updatePerson: (id: string, updates: Partial<Person>) => Promise<void>;
+  deletePerson: (id: string) => Promise<void>;
 
   // Helpers (computed from state — same as Phase A)
   getProjectTotals: (projectId: string) => {
@@ -119,6 +125,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [budgetLines, setBudgetLines] = useState<BudgetLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [people, setPeople] = useState<Person[]>([]);
 
   // ─── Initial fetch ────────────────────────────────
   useEffect(() => {
@@ -126,13 +133,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       try {
-        const [pRes, tRes, mRes, psRes, dRes, blRes] = await Promise.all([
+        const [pRes, tRes, mRes, psRes, dRes, blRes, peRes] = await Promise.all([
           supabase.from('projects').select('*').order('created_at', { ascending: false }),
           supabase.from('transactions').select('*').order('date', { ascending: false }),
           supabase.from('milestones').select('*').order('dot'),
           supabase.from('phat_sinhs').select('*').order('date', { ascending: false }),
           supabase.from('debt_entries').select('*'),
           supabase.from('budget_lines').select('*'),
+          supabase.from('people').select('*').order('name'),
         ]);
 
         if (pRes.error) throw pRes.error;
@@ -141,6 +149,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (psRes.error) throw psRes.error;
         if (dRes.error) throw dRes.error;
         if (blRes.error) throw blRes.error;
+        // people table may not exist yet — soft fail
+        if (peRes.error) console.warn('people table not found, skipping:', peRes.error.message);
 
         setProjects((pRes.data || []).map(rowToProject));
         setTransactions((tRes.data || []).map(rowToTransaction));
@@ -148,6 +158,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setPhatSinhs((psRes.data || []).map(rowToPhatSinh));
         setDebtEntries((dRes.data || []).map(rowToDebtEntry));
         setBudgetLines((blRes.data || []).map(rowToBudgetLine));
+        setPeople((peRes.data || []).map(rowToPerson));
       } catch (err) {
         console.error('Failed to fetch data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -488,15 +499,43 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return { entries, totalEstimated, totalPhatSinh, totalPaid, totalOutstanding, activeCount };
   }, [budgetLines, transactions, phatSinhs, projects]);
 
+  // ─── People CRUD ─────────────────────────────────
+  const addPerson = useCallback(async (data: Omit<Person, 'id' | 'createdAt'>): Promise<Person> => {
+    const row = personToRow(data);
+    const { data: rows, error: err } = await supabase
+      .from('people').insert(row).select().single();
+    if (err) throw err;
+    const newPerson = rowToPerson(rows);
+    setPeople(prev => [newPerson, ...prev]);
+    return newPerson;
+  }, []);
+
+  const updatePerson = useCallback(async (id: string, updates: Partial<Person>) => {
+    const row = personToRow(updates);
+    const { error: err } = await supabase
+      .from('people').update(row).eq('id', id);
+    if (err) throw err;
+    setPeople(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+  }, []);
+
+  const deletePerson = useCallback(async (id: string) => {
+    const { error: err } = await supabase
+      .from('people').delete().eq('id', id);
+    if (err) throw err;
+    setPeople(prev => prev.filter(p => p.id !== id));
+  }, []);
+
   return (
     <DataContext.Provider value={{
       projects, transactions, milestones, phatSinhs, debtEntries, budgetLines,
+      people,
       loading, error,
       addProject, updateProject, deleteProject,
       addTransaction, updateTransaction, deleteTransaction,
       addMilestone, updateMilestone, deleteMilestone,
       addPhatSinh, updatePhatSinh, deletePhatSinh,
       addBudgetLine, updateBudgetLine, deleteBudgetLine,
+      addPerson, updatePerson, deletePerson,
       getProjectTotals, getDebtSummary, getAdvanceSummary,
       getReceivablesSummary, getBudgetSummary, getPayableSummary,
     }}>

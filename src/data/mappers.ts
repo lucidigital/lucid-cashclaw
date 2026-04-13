@@ -1,7 +1,7 @@
 // ─── Lucid CashClaw — Data Mappers ──────────────────
 // Convert between camelCase (TypeScript) ↔ snake_case (PostgreSQL)
 
-import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry } from './mockData';
+import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, Person } from './mockData';
 import type { BudgetLine } from './budgetData';
 
 // ─── Generic snake_case → camelCase ─────────────────
@@ -169,3 +169,31 @@ export function budgetLineToRow(data: Partial<BudgetLine>) {
 
 // Re-export generic utils
 export { snakeToCamel, camelToSnake };
+
+// ─── Person Mappers ─────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function rowToPerson(row: Record<string, any>): Person {
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type,
+    role: row.role || undefined,
+    phone: row.phone || undefined,
+    taxCode: row.tax_code || undefined,
+    bankInfo: row.bank_info || undefined,
+    note: row.note || undefined,
+    createdAt: row.created_at?.split('T')[0] || '',
+  };
+}
+
+export function personToRow(data: Partial<Person>) {
+  const row: Record<string, unknown> = {};
+  if (data.name     !== undefined) row.name      = data.name;
+  if (data.type     !== undefined) row.type      = data.type;
+  if (data.role     !== undefined) row.role      = data.role;
+  if (data.phone    !== undefined) row.phone     = data.phone;
+  if (data.taxCode  !== undefined) row.tax_code  = data.taxCode;
+  if (data.bankInfo !== undefined) row.bank_info = data.bankInfo;
+  if (data.note     !== undefined) row.note      = data.note;
+  return row;
+}

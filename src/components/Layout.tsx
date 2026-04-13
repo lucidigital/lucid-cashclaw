@@ -6,6 +6,7 @@ import './Layout.css';
 const NAV_ITEMS = [
   { path: '/', icon: '📊', label: 'Dashboard' },
   { path: '/projects', icon: '📁', label: 'Projects' },
+  { path: '/people', icon: '👥', label: 'Partners & Staff' },
   { path: '/transactions', icon: '💳', label: 'Transactions' },
   { path: '/budget', icon: '📋', label: 'Forecast' },
   { path: '/debt', icon: '🏦', label: 'Ledger' },

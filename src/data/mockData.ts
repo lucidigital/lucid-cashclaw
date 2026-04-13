@@ -55,6 +55,18 @@ export interface DebtEntry {
   note?: string;
 }
 
+export interface Person {
+  id: string;
+  name: string;
+  type: 'staff' | 'freelance' | 'supplier' | 'org';
+  role?: string;
+  phone?: string;
+  taxCode?: string;
+  bankInfo?: string;
+  note?: string;
+  createdAt: string;
+}
+
 // ─── Project Types ──────────────────────────────────
 export const PROJECT_TYPES = [
   'TVC Post', 'Animation', 'VFX Feature', 'Full CG',
@@ -81,6 +93,26 @@ export const CATEGORIES_CHI = [
   { code: 'thue',      icon: '📋', name: 'Chi thuế' },
   { code: 'vanhanh',   icon: '🏢', name: 'Chi vận hành' },
   { code: 'khac',      icon: '📦', name: 'Chi khác' },
+];
+
+// ─── People Types ────────────────────────────────────
+export const PEOPLE_TYPES = [
+  { code: 'staff',     icon: '👥', name: 'Staff',      color: '#00b894' },
+  { code: 'freelance', icon: '👤', name: 'Freelance',  color: '#0984e3' },
+  { code: 'supplier',  icon: '🏢', name: 'Supplier',   color: '#e17055' },
+  { code: 'org',       icon: '🏦', name: 'Tổ chức',   color: '#6c5ce7' },
+] as const;
+
+// ─── Mock People ─────────────────────────────────────
+export const MOCK_PEOPLE: Person[] = [
+  { id: 'pe1', name: 'Hùng',         type: 'staff',     role: 'VFX Compositor', phone: '0912345678', taxCode: '031234xxxx', createdAt: '2025-01-10' },
+  { id: 'pe2', name: 'Nam',          type: 'staff',     role: 'Roto Artist',    phone: '0915678901', createdAt: '2025-02-01' },
+  { id: 'pe3', name: 'Linh',         type: 'staff',     role: 'Editor',         phone: '0917890123', createdAt: '2025-01-15' },
+  { id: 'pe4', name: 'Trung Ca',     type: 'freelance', role: 'Colorist',       phone: '0908123456', taxCode: '031567xxxx', createdAt: '2025-03-05' },
+  { id: 'pe5', name: 'Đạt 3D',       type: 'freelance', role: '3D Artist',      phone: '0909234567', createdAt: '2025-04-01' },
+  { id: 'pe6', name: 'Sound Studio', type: 'supplier',  role: 'Sound Design',   phone: '02838xxxx',  taxCode: '031678xxxx', bankInfo: 'VCB - 123456789', createdAt: '2025-01-20' },
+  { id: 'pe7', name: 'Studio Render',type: 'supplier',  role: 'Cloud Render',   taxCode: '031789xxxx', createdAt: '2025-02-10' },
+  { id: 'pe8', name: 'ACB',          type: 'org',       role: 'Ngân hàng',      phone: '19006247',   createdAt: '2025-01-01' },
 ];
 
 // ─── Mock Projects ──────────────────────────────────

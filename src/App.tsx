@@ -10,6 +10,7 @@ import ProjectDetail from './pages/ProjectDetail';
 import Transactions from './pages/Transactions';
 import DebtReview from './pages/DebtReview';
 import BudgetForecast from './pages/BudgetForecast';
+import People from './pages/People';
 import Login from './pages/Login';
 
 export default function App() {
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
+            <Route path="/people" element={<People />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/budget" element={<BudgetForecast />} />
             <Route path="/debt" element={<DebtReview />} />
