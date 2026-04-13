@@ -5,7 +5,7 @@ import './Dashboard.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { projects, transactions, budgetLines, milestones, getProjectTotals, getDebtSummary } = useData();
+  const { projects, transactions, budgetLines, getProjectTotals, getDebtSummary } = useData();
 
   // ─── Calculate KPIs ───────────────────────────────
   const allThu = transactions
@@ -19,8 +19,6 @@ export default function Dashboard() {
 
   // ─── Debt KPI ─────────────────────────────────────
   const debtSummary = getDebtSummary();
-  const activeProjects = projects.filter(p => p.status === 'in_progress' || p.status === 'review');
-  const activeProjectIds = new Set(activeProjects.map(p => p.id));
   const nonArchivedProjects = projects.filter(p => p.status !== 'archived');
 
   // ─── Tổng Dự Thu KPI = tất cả project budget (completed + active) ───
