@@ -193,8 +193,9 @@ export default function BudgetForecast() {
           </button>
         </div>
         <div className="budget-table">
-          <div className="budget-thead">
+          <div className="budget-thead budget-thu-row">
             <span>Danh mục</span><span>Mô tả</span>
+            <span>Ngày dự kiến</span>
             <span className="bt-right">Dự toán</span><span className="bt-right">Đã thu</span>
             <span className="bt-right">Chênh lệch</span><span>Trạng thái</span>
           </div>
@@ -202,11 +203,29 @@ export default function BudgetForecast() {
             const cat = catMap[line.category];
             const diff = line.actualAmount - line.estimatedAmount;
             return (
-              <div key={line.id} className={`budget-trow ${line.status}`} onClick={() => openEdit(line)}>
+              <div key={line.id} className={`budget-trow budget-thu-row ${line.status}`} onClick={() => openEdit(line)}>
                 <span className="bt-cat">{cat?.icon || '📋'} {cat?.name || line.category}</span>
                 <span className="bt-desc">
                   {line.description}
                   {line.note && <span className="bt-note">💬 {line.note}</span>}
+                </span>
+                <span className="bt-date">
+                  {line.expectedDate
+                    ? (() => {
+                        const d = new Date(line.expectedDate);
+                        const diff = Math.ceil((d.getTime() - Date.now()) / 86_400_000);
+                        return (
+                          <>
+                            <span style={{ display: 'block', fontWeight: 600 }}>
+                              {d.toLocaleDateString('vi', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: diff < 0 ? 'var(--color-danger)' : diff <= 7 ? 'var(--color-warning)' : 'var(--text-muted)' }}>
+                              {diff < 0 ? `⚠️ quá ${Math.abs(diff)}ng` : diff === 0 ? '📌 Hôm nay' : `📌 ${diff} ngày`}
+                            </span>
+                          </>
+                        );
+                      })()
+                    : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                 </span>
                 <span className="bt-amount bt-right">{formatVND(line.estimatedAmount)}</span>
                 <span className={`bt-amount bt-right ${line.actualAmount > 0 ? 'text-income' : ''}`}>
@@ -223,8 +242,9 @@ export default function BudgetForecast() {
           })}
 
           {lines.length > 0 && (
-            <div className="budget-trow budget-total-row">
+            <div className="budget-trow budget-thu-row budget-total-row">
               <span className="bt-cat" style={{ fontWeight: 800 }}>Tổng cộng</span>
+              <span></span>
               <span></span>
               <span className="bt-amount bt-right" style={{ fontWeight: 800 }}>{formatVND(totEst)}</span>
               <span className="bt-amount bt-right text-income" style={{ fontWeight: 800 }}>{formatVND(totAct)}</span>
