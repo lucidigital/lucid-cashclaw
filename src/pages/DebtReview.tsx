@@ -307,7 +307,7 @@ function ReceivablesTab() {
           <div className="recv-list">
             {filteredPayables.map(e => {
               const personType = personTypeMap[e.person.toLowerCase()] || 'staff';
-              const typeIcon = { staff: '👥', freelance: '👤', supplier: '🏭', org: '🏦' }[personType] || '👤';
+              const typeIcon = { leader: '👑', staff: '👥', freelance: '👤', supplier: '🏭', org: '🏦' }[personType] || '👤';
               return (
                 <div key={e.person} className="recv-row">
                   <div className="recv-row-left">

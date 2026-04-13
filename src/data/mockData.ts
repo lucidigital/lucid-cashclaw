@@ -59,7 +59,7 @@ export interface DebtEntry {
 export interface Person {
   id: string;
   name: string;
-  type: 'staff' | 'freelance' | 'supplier' | 'org';
+  type: 'leader' | 'staff' | 'freelance' | 'supplier' | 'org';
   role?: string;
   phone?: string;
   taxCode?: string;
@@ -98,6 +98,7 @@ export const CATEGORIES_CHI = [
 
 // ─── People Types ────────────────────────────────────
 export const PEOPLE_TYPES = [
+  { code: 'leader',    icon: '👑', name: 'Leader',     color: '#fdcb6e' },
   { code: 'staff',     icon: '👥', name: 'Staff',      color: '#00b894' },
   { code: 'freelance', icon: '👤', name: 'Freelance',  color: '#0984e3' },
   { code: 'supplier',  icon: '🏢', name: 'Supplier',   color: '#e17055' },
