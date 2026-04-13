@@ -1,7 +1,7 @@
 // ─── Lucid CashClaw — Data Mappers ──────────────────
 // Convert between camelCase (TypeScript) ↔ snake_case (PostgreSQL)
 
-import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, Person } from './mockData';
+import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, ManualDebt, Person } from './mockData';
 import type { BudgetLine } from './budgetData';
 
 // ─── Generic snake_case → camelCase ─────────────────
@@ -94,6 +94,32 @@ export function rowToDebtEntry(row: Record<string, any>): DebtEntry {
     type: row.type,
     note: row.note || undefined,
   };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function rowToManualDebt(row: Record<string, any>): ManualDebt {
+  return {
+    id: row.id,
+    person: row.person,
+    type: row.type,
+    amount: row.amount,
+    repaid: row.repaid || 0,
+    note: row.note || undefined,
+    date: row.date,
+    createdAt: row.created_at?.split('T')[0] || '',
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function manualDebtToRow(data: Partial<ManualDebt>): Record<string, any> {
+  const row: Record<string, unknown> = {};
+  if (data.person !== undefined) row.person = data.person;
+  if (data.type !== undefined) row.type = data.type;
+  if (data.amount !== undefined) row.amount = data.amount;
+  if (data.repaid !== undefined) row.repaid = data.repaid;
+  if (data.note !== undefined) row.note = data.note || null;
+  if (data.date !== undefined) row.date = data.date;
+  return row;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

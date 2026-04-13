@@ -56,6 +56,17 @@ export interface DebtEntry {
   note?: string;
 }
 
+export interface ManualDebt {
+  id: string;
+  person: string;
+  type: 'bank' | 'personal' | 'family';
+  amount: number;
+  repaid: number;
+  note?: string;
+  date: string;
+  createdAt: string;
+}
+
 export interface Person {
   id: string;
   name: string;

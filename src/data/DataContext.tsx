@@ -6,10 +6,10 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import { supabase } from './supabaseClient';
 import {
   rowToProject, rowToTransaction, rowToMilestone, rowToPhatSinh,
-  rowToDebtEntry, rowToBudgetLine, rowToPerson,
+  rowToDebtEntry, rowToBudgetLine, rowToPerson, rowToManualDebt, manualDebtToRow,
   projectToRow, transactionToRow, milestoneToRow, phatSinhToRow, budgetLineToRow, personToRow,
 } from './mappers';
-import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, Person } from './mockData';
+import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, ManualDebt, Person } from './mockData';
 import type { BudgetLine } from './budgetData';
 
 // ─── Context Type (unchanged from Phase A) ──────────
@@ -57,6 +57,12 @@ interface DataContextType {
   updatePerson: (id: string, updates: Partial<Person>) => Promise<void>;
   deletePerson: (id: string) => Promise<void>;
 
+  // Manual Debts
+  manualDebts: ManualDebt[];
+  addManualDebt: (d: Omit<ManualDebt, 'id' | 'createdAt'>) => Promise<ManualDebt>;
+  updateManualDebt: (id: string, updates: Partial<ManualDebt>) => Promise<void>;
+  deleteManualDebt: (id: string) => Promise<void>;
+
   // Helpers (computed from state — same as Phase A)
   getProjectTotals: (projectId: string) => {
     thuHD: number; chiHD: number; totalPS: number;
@@ -67,6 +73,7 @@ interface DataContextType {
       name: string; type: string; typeIcon: string; typeLabel: string;
       borrowed: number; repaid: number; remaining: number;
       note?: string; transactions: Transaction[];
+      isManual?: boolean; manualIds?: string[];
     }>;
     totalBorrowed: number; totalRepaid: number;
     totalRemaining: number; activeCount: number;
@@ -126,6 +133,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
+  const [manualDebts, setManualDebts] = useState<ManualDebt[]>([]);
 
   // ─── Initial fetch ────────────────────────────────
   useEffect(() => {
@@ -133,7 +141,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       try {
-        const [pRes, tRes, mRes, psRes, dRes, blRes, peRes] = await Promise.all([
+        const [pRes, tRes, mRes, psRes, dRes, blRes, peRes, mdRes] = await Promise.all([
           supabase.from('projects').select('*').order('created_at', { ascending: false }),
           supabase.from('transactions').select('*').order('date', { ascending: false }),
           supabase.from('milestones').select('*').order('dot'),
@@ -141,6 +149,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           supabase.from('debt_entries').select('*'),
           supabase.from('budget_lines').select('*'),
           supabase.from('people').select('*').order('name'),
+          supabase.from('manual_debts').select('*').order('date', { ascending: false }),
         ]);
 
         if (pRes.error) throw pRes.error;
@@ -149,8 +158,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (psRes.error) throw psRes.error;
         if (dRes.error) throw dRes.error;
         if (blRes.error) throw blRes.error;
-        // people table may not exist yet — soft fail
+        // people/manual_debts tables may not exist yet — soft fail
         if (peRes.error) console.warn('people table not found, skipping:', peRes.error.message);
+        if (mdRes.error) console.warn('manual_debts table not found, skipping:', mdRes.error.message);
 
         setProjects((pRes.data || []).map(rowToProject));
         setTransactions((tRes.data || []).map(rowToTransaction));
@@ -159,6 +169,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setDebtEntries((dRes.data || []).map(rowToDebtEntry));
         setBudgetLines((blRes.data || []).map(rowToBudgetLine));
         setPeople((peRes.data || []).map(rowToPerson));
+        setManualDebts((mdRes.data || []).map(rowToManualDebt));
       } catch (err) {
         console.error('Failed to fetch data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -319,28 +330,41 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const getDebtSummary = useCallback(() => {
     // Thu vay_ung = vay tiền về, Chi tra_no = trả lại
     const ungTxns = transactions.filter(t => (t.category === 'vay_ung' || t.category === 'tra_no') && t.person);
-    const byPerson: Record<string, { borrowed: number; repaid: number; transactions: Transaction[] }> = {};
+    const byPerson: Record<string, { borrowed: number; repaid: number; transactions: Transaction[]; manualIds: string[] }> = {};
 
     ungTxns.forEach(t => {
       const key = t.person!;
-      if (!byPerson[key]) byPerson[key] = { borrowed: 0, repaid: 0, transactions: [] };
+      if (!byPerson[key]) byPerson[key] = { borrowed: 0, repaid: 0, transactions: [], manualIds: [] };
       byPerson[key].transactions.push(t);
       if (t.type === 'thu') byPerson[key].borrowed += t.amount;   // vay_ung
       if (t.type === 'chi') byPerson[key].repaid += t.amount;     // tra_no
     });
 
+    // Merge manual debts
+    manualDebts.forEach(md => {
+      const key = md.person;
+      if (!byPerson[key]) byPerson[key] = { borrowed: 0, repaid: 0, transactions: [], manualIds: [] };
+      byPerson[key].borrowed += md.amount;
+      byPerson[key].repaid += md.repaid;
+      byPerson[key].manualIds.push(md.id);
+    });
+
     const entries = Object.entries(byPerson).map(([name, data]) => {
       const meta = debtEntries.find(d => d.name === name);
+      const manualMeta = manualDebts.find(md => md.person === name);
+      const type = meta?.type || manualMeta?.type || 'personal';
       return {
         name,
-        type: meta?.type || 'personal',
-        typeIcon: meta?.type === 'bank' ? '🏦' : '👤',
-        typeLabel: meta?.type === 'bank' ? 'Ngân hàng' : meta?.type === 'family' ? 'Gia đình' : 'Cá nhân',
+        type,
+        typeIcon: type === 'bank' ? '🏦' : '👤',
+        typeLabel: type === 'bank' ? 'Ngân hàng' : type === 'family' ? 'Gia đình' : 'Cá nhân',
         borrowed: data.borrowed,
         repaid: data.repaid,
         remaining: data.borrowed - data.repaid,
-        note: meta?.note,
+        note: meta?.note || manualMeta?.note,
         transactions: data.transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+        isManual: data.manualIds.length > 0,
+        manualIds: data.manualIds,
       };
     });
 
@@ -350,7 +374,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const activeCount = entries.filter(e => e.remaining > 0).length;
 
     return { entries, totalBorrowed, totalRepaid, totalRemaining, activeCount };
-  }, [transactions, debtEntries]);
+  }, [transactions, debtEntries, manualDebts]);
 
   const getAdvanceSummary = useCallback(() => {
     // Chi chi_ung = ứng tiền ra, Thu thu_ung = nhân viên trả lại
@@ -542,10 +566,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setPeople(prev => prev.filter(p => p.id !== id));
   }, []);
 
+  // ─── Manual Debt CRUD ─────────────────────────────
+  const addManualDebt = useCallback(async (data: Omit<ManualDebt, 'id' | 'createdAt'>): Promise<ManualDebt> => {
+    const row = manualDebtToRow(data);
+    const { data: rows, error: err } = await supabase
+      .from('manual_debts').insert(row).select();
+    if (err) throw err;
+    const md = rowToManualDebt(rows![0]);
+    setManualDebts(prev => [md, ...prev]);
+    return md;
+  }, []);
+
+  const updateManualDebt = useCallback(async (id: string, updates: Partial<ManualDebt>) => {
+    const row = manualDebtToRow(updates);
+    const { error: err } = await supabase
+      .from('manual_debts').update(row).eq('id', id);
+    if (err) throw err;
+    setManualDebts(prev => prev.map(md => md.id === id ? { ...md, ...updates } : md));
+  }, []);
+
+  const deleteManualDebt = useCallback(async (id: string) => {
+    const { error: err } = await supabase
+      .from('manual_debts').delete().eq('id', id);
+    if (err) throw err;
+    setManualDebts(prev => prev.filter(md => md.id !== id));
+  }, []);
+
   return (
     <DataContext.Provider value={{
       projects, transactions, milestones, phatSinhs, debtEntries, budgetLines,
-      people,
+      people, manualDebts,
       loading, error,
       addProject, updateProject, deleteProject,
       addTransaction, updateTransaction, deleteTransaction,
@@ -553,6 +603,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addPhatSinh, updatePhatSinh, deletePhatSinh,
       addBudgetLine, updateBudgetLine, deleteBudgetLine,
       addPerson, updatePerson, deletePerson,
+      addManualDebt, updateManualDebt, deleteManualDebt,
       getProjectTotals, getDebtSummary, getAdvanceSummary,
       getReceivablesSummary, getBudgetSummary, getPayableSummary,
     }}>

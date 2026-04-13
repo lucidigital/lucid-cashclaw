@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { formatVND, formatFullVND, type Transaction } from '../data/mockData';
 import { useData } from '../data/DataContext';
+import Modal from '../components/Modal';
 import './DebtReview.css';
 
 type TabId = 'debts' | 'advances' | 'receivables';
@@ -40,9 +41,78 @@ export default function DebtReview() {
 
 // ─── Tab 1: Nợ vay ─────────────────────────────────
 function DebtsTab({ selected, onSelect }: { selected: string | null; onSelect: (s: string | null) => void }) {
-  const { getDebtSummary } = useData();
+  const { getDebtSummary, manualDebts, addManualDebt, updateManualDebt, deleteManualDebt } = useData();
   const summary = getDebtSummary();
   const selectedEntry = summary.entries.find(e => e.name === selected);
+
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formPerson, setFormPerson] = useState('');
+  const [formType, setFormType] = useState<'bank' | 'personal' | 'family'>('personal');
+  const [formAmount, setFormAmount] = useState('');
+  const [formRepaid, setFormRepaid] = useState('');
+  const [formNote, setFormNote] = useState('');
+  const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
+  const [formError, setFormError] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  function resetForm() {
+    setEditingId(null); setFormPerson(''); setFormType('personal');
+    setFormAmount(''); setFormRepaid(''); setFormNote('');
+    setFormDate(new Date().toISOString().split('T')[0]);
+    setFormError(''); setShowDeleteConfirm(false);
+  }
+
+  function openNew() { resetForm(); setShowModal(true); }
+
+  function openEdit(id: string) {
+    const md = manualDebts.find(d => d.id === id);
+    if (!md) return;
+    setEditingId(id);
+    setFormPerson(md.person);
+    setFormType(md.type);
+    setFormAmount(String(md.amount / 1_000_000));
+    setFormRepaid(String(md.repaid / 1_000_000));
+    setFormNote(md.note || '');
+    setFormDate(md.date);
+    setShowDeleteConfirm(false);
+    setFormError('');
+    setShowModal(true);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const amount = parseFloat(formAmount) * 1_000_000;
+    const repaid = parseFloat(formRepaid || '0') * 1_000_000;
+    if (!formPerson.trim() || amount <= 0) return;
+    try {
+      if (editingId) {
+        await updateManualDebt(editingId, { person: formPerson.trim(), type: formType, amount, repaid, note: formNote, date: formDate });
+      } else {
+        await addManualDebt({ person: formPerson.trim(), type: formType, amount, repaid, note: formNote, date: formDate });
+      }
+      setShowModal(false); resetForm();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Lỗi lưu khoản nợ');
+    }
+  }
+
+  async function handleDelete() {
+    if (!editingId) return;
+    try {
+      await deleteManualDebt(editingId);
+      setShowModal(false); resetForm(); onSelect(null);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Lỗi xóa');
+    }
+  }
+
+  const DEBT_TYPES: { code: 'bank' | 'personal' | 'family'; icon: string; label: string }[] = [
+    { code: 'bank', icon: '🏦', label: 'Ngân hàng' },
+    { code: 'personal', icon: '👤', label: 'Cá nhân' },
+    { code: 'family', icon: '👨‍👩‍👧', label: 'Gia đình' },
+  ];
 
   return (
     <>
@@ -55,7 +125,10 @@ function DebtsTab({ selected, onSelect }: { selected: string | null; onSelect: (
 
       <div className="debt-grid">
         <div className="card debt-list-card">
-          <h3 className="dash-card-title">📋 Danh sách khoản vay</h3>
+          <div className="dash-card-header">
+            <h3 className="dash-card-title">📋 Danh sách khoản vay</h3>
+            <button className="btn btn-primary" onClick={openNew}>＋ Thêm nợ</button>
+          </div>
           <div className="debt-list">
             {summary.entries.map(entry => {
               const isActive = entry.name === selected;
@@ -66,7 +139,10 @@ function DebtsTab({ selected, onSelect }: { selected: string | null; onSelect: (
                   <div className="debt-row-left">
                     <div className="debt-avatar">{entry.type === 'bank' ? '🏦' : entry.type === 'family' ? '👨‍👩‍👧' : '👤'}</div>
                     <div className="debt-row-info">
-                      <span className="debt-row-name">{entry.name}</span>
+                      <span className="debt-row-name">
+                        {entry.name}
+                        {entry.isManual && <span className="manual-badge" title="Nhập tay">📝</span>}
+                      </span>
                       <span className="debt-row-type">{entry.typeLabel}</span>
                     </div>
                   </div>
@@ -89,6 +165,13 @@ function DebtsTab({ selected, onSelect }: { selected: string | null; onSelect: (
                 </div>
               );
             })}
+            {summary.entries.length === 0 && (
+              <div className="empty-state" style={{ padding: '2rem' }}>
+                <span style={{ fontSize: '1.5rem' }}>📭</span>
+                <p>Chưa có khoản nợ nào</p>
+                <button className="btn btn-primary" onClick={openNew} style={{ marginTop: 8 }}>＋ Thêm khoản nợ đầu tiên</button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -102,11 +185,97 @@ function DebtsTab({ selected, onSelect }: { selected: string | null; onSelect: (
             stat3: { label: 'Còn nợ', value: selectedEntry.remaining, cls: selectedEntry.remaining > 0 ? 'text-danger' : 'text-income' },
             note: selectedEntry.note,
             transactions: selectedEntry.transactions,
+            isManual: selectedEntry.isManual,
+            manualIds: selectedEntry.manualIds,
+            onEdit: (id: string) => openEdit(id),
           } : null}
           emptyIcon="🏦"
           emptyText="Chọn một khoản vay để xem chi tiết"
         />
       </div>
+
+      {/* ─── Manual Debt Modal ───────────────────────── */}
+      <Modal
+        open={showModal}
+        onClose={() => { setShowModal(false); resetForm(); }}
+        title={editingId ? '✏️ Sửa khoản nợ' : '＋ Thêm khoản nợ'}
+        icon=""
+        footer={
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', width: '100%' }}>
+            <div>
+              {editingId && !showDeleteConfirm && (
+                <button type="button" className="btn btn-danger" onClick={() => setShowDeleteConfirm(true)}>🗑 Xóa</button>
+              )}
+              {showDeleteConfirm && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span style={{ color: 'var(--color-danger)', fontSize: '0.85rem' }}>Xóa khoản nợ này?</span>
+                  <button type="button" className="btn btn-danger" onClick={handleDelete}>Xác nhận xóa</button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setShowDeleteConfirm(false)}>Hủy</button>
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn btn-ghost" onClick={() => { setShowModal(false); resetForm(); }}>Hủy</button>
+              <button type="submit" form="manual-debt-form" className="btn btn-primary"
+                disabled={!formPerson.trim() || !formAmount || parseFloat(formAmount) <= 0}>
+                💾 {editingId ? 'Cập nhật' : 'Lưu'}
+              </button>
+            </div>
+          </div>
+        }
+      >
+        <form id="manual-debt-form" onSubmit={handleSubmit}>
+          {formError && <div style={{ background: 'rgba(214,48,49,0.15)', color: 'var(--color-danger)', padding: '8px 12px', borderRadius: 8, marginBottom: 12, fontSize: '0.85rem' }}>{formError}</div>}
+
+          <div className="form-group">
+            <label className="form-label">Tên chủ nợ <span className="form-required">*</span></label>
+            <input className="input" placeholder="VD: Ngân hàng VCB, Anh Tuấn..." value={formPerson} onChange={e => setFormPerson(e.target.value)} required />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Loại</label>
+            <div className="status-pills">
+              {DEBT_TYPES.map(dt => (
+                <button key={dt.code} type="button"
+                  className={`status-pill ${formType === dt.code ? 'active' : ''}`}
+                  style={{ '--pill-color': dt.code === 'bank' ? '#74b9ff' : dt.code === 'family' ? '#fdcb6e' : '#dfe6e9', '--pill-bg': dt.code === 'bank' ? 'rgba(116,185,255,0.1)' : dt.code === 'family' ? 'rgba(253,203,110,0.1)' : 'rgba(223,230,233,0.1)' } as React.CSSProperties}
+                  onClick={() => setFormType(dt.code)}>
+                  {dt.icon} {dt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Số tiền vay <span className="form-required">*</span></label>
+            <div className="amount-input-wrapper">
+              <input className="input" type="number" step="any" placeholder="VD: 50" value={formAmount} onChange={e => setFormAmount(e.target.value)} required />
+              <span className="currency">triệu ₫</span>
+            </div>
+            {formAmount && parseFloat(formAmount) > 0 && (
+              <span className="form-hint amount-preview">= {formatFullVND(parseFloat(formAmount) * 1_000_000)}</span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Đã trả</label>
+            <div className="amount-input-wrapper">
+              <input className="input" type="number" step="any" placeholder="0" value={formRepaid} onChange={e => setFormRepaid(e.target.value)} />
+              <span className="currency">triệu ₫</span>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Ngày vay</label>
+            <input className="input" type="date" value={formDate} onChange={e => setFormDate(e.target.value)} />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Ghi chú</label>
+            <textarea className="input" rows={2} placeholder="Ghi chú thêm..." value={formNote} onChange={e => setFormNote(e.target.value)} />
+          </div>
+        </form>
+      </Modal>
     </>
   );
 }
@@ -373,6 +542,9 @@ function DetailPanel({ entry, emptyIcon, emptyText }: {
     stat3: { label: string; value: number; cls?: string };
     note?: string;
     transactions: Transaction[];
+    isManual?: boolean;
+    manualIds?: string[];
+    onEdit?: (id: string) => void;
   } | null;
   emptyIcon: string; emptyText: string;
 }) {
@@ -396,7 +568,18 @@ function DetailPanel({ entry, emptyIcon, emptyText }: {
           <h3 className="debt-detail-name">{entry.name}</h3>
           <span className="debt-detail-type">{entry.typeLabel}</span>
         </div>
+        {entry.isManual && entry.manualIds && entry.onEdit && (
+          <button className="btn btn-ghost" style={{ marginLeft: 'auto' }}
+            onClick={() => entry.onEdit!(entry.manualIds![0])}>
+            ✏️ Sửa
+          </button>
+        )}
       </div>
+      {entry.isManual && (
+        <div style={{ marginBottom: 8 }}>
+          <span className="manual-badge-large">📝 Khoản nợ nhập tay</span>
+        </div>
+      )}
       <div className="debt-detail-stats">
         <div className="debt-detail-stat">
           <span className="dds-label">{entry.stat1.label}</span>
@@ -426,6 +609,11 @@ function DetailPanel({ entry, emptyIcon, emptyText }: {
             </span>
           </div>
         ))}
+        {entry.transactions.length === 0 && (
+          <div className="empty-state" style={{ padding: '1rem', fontSize: '0.85rem' }}>
+            Chưa có giao dịch liên quan
+          </div>
+        )}
       </div>
     </div>
   );
