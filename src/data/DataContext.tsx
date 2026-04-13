@@ -293,8 +293,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const project = projects.find(p => p.id === projectId);
     const psList = phatSinhs.filter(ps => ps.projectId === projectId);
 
-    const thuHD = txns.filter(t => t.type === 'thu' && t.category !== 'ung').reduce((s, t) => s + t.amount, 0);
-    const chiHD = txns.filter(t => t.type === 'chi' && t.category !== 'ung').reduce((s, t) => s + t.amount, 0);
+    // Exclude all non-operational categories from project P&L
+    const DEBT_CATS = ['vay_ung', 'tra_no', 'chi_ung', 'thu_ung'];
+    const thuHD = txns.filter(t => t.type === 'thu' && !DEBT_CATS.includes(t.category)).reduce((s, t) => s + t.amount, 0);
+    const chiHD = txns.filter(t => t.type === 'chi' && !DEBT_CATS.includes(t.category)).reduce((s, t) => s + t.amount, 0);
     const totalPS = psList.reduce((s, ps) => s + ps.amount, 0);
     const budget = project?.budget || 0;
     const healthHD = budget > 0 ? Math.round((chiHD / budget) * 100) : 0;
@@ -304,15 +306,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [transactions, projects, phatSinhs]);
 
   const getDebtSummary = useCallback(() => {
-    const ungTxns = transactions.filter(t => t.category === 'ung' && t.person);
+    // Thu vay_ung = vay tiền về, Chi tra_no = trả lại
+    const ungTxns = transactions.filter(t => (t.category === 'vay_ung' || t.category === 'tra_no') && t.person);
     const byPerson: Record<string, { borrowed: number; repaid: number; transactions: Transaction[] }> = {};
 
     ungTxns.forEach(t => {
       const key = t.person!;
       if (!byPerson[key]) byPerson[key] = { borrowed: 0, repaid: 0, transactions: [] };
       byPerson[key].transactions.push(t);
-      if (t.type === 'thu') byPerson[key].borrowed += t.amount;
-      if (t.type === 'chi') byPerson[key].repaid += t.amount;
+      if (t.type === 'thu') byPerson[key].borrowed += t.amount;   // vay_ung
+      if (t.type === 'chi') byPerson[key].repaid += t.amount;     // tra_no
     });
 
     const entries = Object.entries(byPerson).map(([name, data]) => {
@@ -339,15 +342,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [transactions, debtEntries]);
 
   const getAdvanceSummary = useCallback(() => {
-    const ungTxns = transactions.filter(t => t.category === 'ungcty' && t.person);
+    // Chi chi_ung = ứng tiền ra, Thu thu_ung = nhân viên trả lại
+    const ungTxns = transactions.filter(t => (t.category === 'chi_ung' || t.category === 'thu_ung') && t.person);
     const byPerson: Record<string, { advanced: number; returned: number; transactions: Transaction[] }> = {};
 
     ungTxns.forEach(t => {
       const key = t.person!;
       if (!byPerson[key]) byPerson[key] = { advanced: 0, returned: 0, transactions: [] };
       byPerson[key].transactions.push(t);
-      if (t.type === 'chi') byPerson[key].advanced += t.amount;
-      if (t.type === 'thu') byPerson[key].returned += t.amount;
+      if (t.type === 'chi') byPerson[key].advanced += t.amount;   // chi_ung
+      if (t.type === 'thu') byPerson[key].returned += t.amount;   // thu_ung
     });
 
     const entries = Object.entries(byPerson).map(([name, data]) => ({
@@ -370,7 +374,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const receivables = projects
       .filter(p => p.status !== 'archived')
       .map(p => {
-        const txns = transactions.filter(t => t.projectId === p.id && t.type === 'thu' && t.category !== 'ung' && t.category !== 'ungcty');
+        const DEBT_CATS = ['vay_ung', 'tra_no', 'chi_ung', 'thu_ung'];
+        const txns = transactions.filter(t => t.projectId === p.id && t.type === 'thu' && !DEBT_CATS.includes(t.category));
         const totalReceived = txns.reduce((s, t) => s + t.amount, 0);
         const outstanding = p.budget - totalReceived;
         return {

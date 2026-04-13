@@ -142,58 +142,58 @@ export const MOCK_PROJECTS: Project[] = [
 export const MOCK_TRANSACTIONS: Transaction[] = [
   // Knorr TVC
   { id: 1, projectId: 'p1', type: 'thu', amount: 105_000_000, category: 'dot', description: 'Đặt cọc 50% HĐ', date: '2026-03-01', createdAt: '2026-03-01' },
-  { id: 2, projectId: 'p1', type: 'chi', amount: 40_000_000, category: 'comp', person: 'Hùng', description: 'Comp 20 shot', date: '2026-03-15', createdAt: '2026-03-15' },
-  { id: 3, projectId: 'p1', type: 'chi', amount: 35_000_000, category: 'render', description: 'Render farm 500 frames', date: '2026-03-20', createdAt: '2026-03-20' },
-  { id: 4, projectId: 'p1', type: 'chi', amount: 15_000_000, category: 'roto', person: 'Nam', description: 'Roto 30 shot', date: '2026-03-22', createdAt: '2026-03-22' },
-  { id: 5, projectId: 'p1', type: 'chi', amount: 10_000_000, category: 'color', description: 'Color grade 30s TVC', date: '2026-03-25', createdAt: '2026-03-25' },
-  { id: 6, projectId: 'p1', type: 'chi', amount: 8_000_000, category: 'anuong', description: 'OT meals team 2 tuần', date: '2026-04-01', createdAt: '2026-04-01' },
-  { id: 7, projectId: 'p1', type: 'chi', amount: 15_000_000, category: 'ps', description: 'Client đổi brief, làm lại 5 shot (phát sinh)', date: '2026-04-05', createdAt: '2026-04-05' },
-  { id: 8, projectId: 'p1', type: 'chi', amount: 8_000_000, category: 'ps', description: 'Thêm 3 shot mới (phát sinh)', date: '2026-04-08', createdAt: '2026-04-08' },
+  { id: 2, projectId: 'p1', type: 'chi', amount: 40_000_000, category: 'nhansu', person: 'Hùng', description: 'Comp 20 shot', date: '2026-03-15', createdAt: '2026-03-15' },
+  { id: 3, projectId: 'p1', type: 'chi', amount: 35_000_000, category: 'chi_khac', description: 'Render farm 500 frames', date: '2026-03-20', createdAt: '2026-03-20' },
+  { id: 4, projectId: 'p1', type: 'chi', amount: 15_000_000, category: 'nhansu', person: 'Nam', description: 'Roto 30 shot', date: '2026-03-22', createdAt: '2026-03-22' },
+  { id: 5, projectId: 'p1', type: 'chi', amount: 10_000_000, category: 'nhansu', description: 'Color grade 30s TVC', date: '2026-03-25', createdAt: '2026-03-25' },
+  { id: 6, projectId: 'p1', type: 'chi', amount: 8_000_000, category: 'vanhanh', description: 'OT meals team 2 tuần', date: '2026-04-01', createdAt: '2026-04-01' },
+  { id: 7, projectId: 'p1', type: 'chi', amount: 15_000_000, category: 'ps_nhansu', description: 'Client đổi brief, làm lại 5 shot (phát sinh)', date: '2026-04-05', createdAt: '2026-04-05' },
+  { id: 8, projectId: 'p1', type: 'chi', amount: 8_000_000, category: 'ps_nhansu', description: 'Thêm 3 shot mới (phát sinh)', date: '2026-04-08', createdAt: '2026-04-08' },
 
   // Milo Champion
   { id: 9, projectId: 'p2', type: 'thu', amount: 175_000_000, category: 'dot', description: 'Đặt cọc 50%', date: '2026-03-10', createdAt: '2026-03-10' },
-  { id: 10, projectId: 'p2', type: 'chi', amount: 60_000_000, category: '3d', person: 'Trung', description: '3D character modeling', date: '2026-03-20', createdAt: '2026-03-20' },
-  { id: 11, projectId: 'p2', type: 'chi', amount: 45_000_000, category: 'comp', description: 'Animation compositing', date: '2026-04-01', createdAt: '2026-04-01' },
-  { id: 12, projectId: 'p2', type: 'chi', amount: 20_000_000, category: 'render', description: 'Cloud render', date: '2026-04-05', createdAt: '2026-04-05' },
+  { id: 10, projectId: 'p2', type: 'chi', amount: 60_000_000, category: 'nhansu', person: 'Trung', description: '3D character modeling', date: '2026-03-20', createdAt: '2026-03-20' },
+  { id: 11, projectId: 'p2', type: 'chi', amount: 45_000_000, category: 'nhansu', description: 'Animation compositing', date: '2026-04-01', createdAt: '2026-04-01' },
+  { id: 12, projectId: 'p2', type: 'chi', amount: 20_000_000, category: 'chi_khac', description: 'Cloud render', date: '2026-04-05', createdAt: '2026-04-05' },
 
   // Sunlight Clean
   { id: 13, projectId: 'p3', type: 'thu', amount: 90_000_000, category: 'dot', description: 'Đặt cọc 50%', date: '2026-02-01', createdAt: '2026-02-01' },
   { id: 14, projectId: 'p3', type: 'thu', amount: 54_000_000, category: 'dot', description: 'Giao offline', date: '2026-03-15', createdAt: '2026-03-15' },
-  { id: 15, projectId: 'p3', type: 'chi', amount: 50_000_000, category: 'comp', description: 'VFX compositing', date: '2026-02-15', createdAt: '2026-02-15' },
-  { id: 16, projectId: 'p3', type: 'chi', amount: 25_000_000, category: 'color', description: 'Color grade final', date: '2026-03-10', createdAt: '2026-03-10' },
-  { id: 17, projectId: 'p3', type: 'chi', amount: 12_000_000, category: 'sound', description: 'Sound mix', date: '2026-03-20', createdAt: '2026-03-20' },
+  { id: 15, projectId: 'p3', type: 'chi', amount: 50_000_000, category: 'nhansu', description: 'VFX compositing', date: '2026-02-15', createdAt: '2026-02-15' },
+  { id: 16, projectId: 'p3', type: 'chi', amount: 25_000_000, category: 'nhansu', description: 'Color grade final', date: '2026-03-10', createdAt: '2026-03-10' },
+  { id: 17, projectId: 'p3', type: 'chi', amount: 12_000_000, category: 'freelance', description: 'Sound mix', date: '2026-03-20', createdAt: '2026-03-20' },
 
   // Vinamilk Organic
   { id: 18, projectId: 'p4', type: 'thu', amount: 225_000_000, category: 'dot', description: 'Đặt cọc 50%', date: '2026-01-15', createdAt: '2026-01-15' },
   { id: 19, projectId: 'p4', type: 'thu', amount: 135_000_000, category: 'dot', description: 'Giao offline', date: '2026-02-28', createdAt: '2026-02-28' },
   { id: 20, projectId: 'p4', type: 'thu', amount: 90_000_000, category: 'dot', description: 'Nghiệm thu', date: '2026-03-15', createdAt: '2026-03-15' },
-  { id: 21, projectId: 'p4', type: 'chi', amount: 120_000_000, category: '3d', description: 'Full CG production', date: '2026-02-01', createdAt: '2026-02-01' },
-  { id: 22, projectId: 'p4', type: 'chi', amount: 80_000_000, category: 'comp', description: 'Compositing final', date: '2026-02-20', createdAt: '2026-02-20' },
-  { id: 23, projectId: 'p4', type: 'chi', amount: 45_000_000, category: 'render', description: 'Render farm', date: '2026-03-01', createdAt: '2026-03-01' },
+  { id: 21, projectId: 'p4', type: 'chi', amount: 120_000_000, category: 'nhansu', description: 'Full CG production', date: '2026-02-01', createdAt: '2026-02-01' },
+  { id: 22, projectId: 'p4', type: 'chi', amount: 80_000_000, category: 'nhansu', description: 'Compositing final', date: '2026-02-20', createdAt: '2026-02-20' },
+  { id: 23, projectId: 'p4', type: 'chi', amount: 45_000_000, category: 'chi_khac', description: 'Render farm', date: '2026-03-01', createdAt: '2026-03-01' },
 
   // DHG Pharma
   { id: 24, projectId: 'p5', type: 'thu', amount: 60_000_000, category: 'dot', description: 'Đặt cọc 50%', date: '2026-04-01', createdAt: '2026-04-01' },
-  { id: 25, projectId: 'p5', type: 'chi', amount: 18_000_000, category: 'edit', description: 'Offline edit', date: '2026-04-05', createdAt: '2026-04-05' },
+  { id: 25, projectId: 'p5', type: 'chi', amount: 18_000_000, category: 'nhansu', description: 'Offline edit', date: '2026-04-05', createdAt: '2026-04-05' },
 
   // General (no project)
   { id: 26, projectId: '', type: 'chi', amount: 12_000_000, category: 'vanhanh', description: 'VP tháng 4', date: '2026-04-01', createdAt: '2026-04-01' },
-  { id: 27, projectId: '', type: 'chi', amount: 3_000_000, category: 'soft', description: 'Nuke license tháng 4', date: '2026-04-01', createdAt: '2026-04-01' },
+  { id: 27, projectId: '', type: 'chi', amount: 3_000_000, category: 'vanhanh', description: 'Nuke license tháng 4', date: '2026-04-01', createdAt: '2026-04-01' },
 
-  // ─── Nợ & Ứng Transactions ─────────────────────────
-  { id: 28, projectId: '', type: 'thu', amount: 100_000_000, category: 'ung', person: 'ACB', description: 'Vay ACB lãi suất 0.8%/tháng', date: '2026-02-01', createdAt: '2026-02-01' },
-  { id: 29, projectId: '', type: 'chi', amount: 30_000_000, category: 'ung', person: 'ACB', description: 'Trả nợ ACB đợt 1', date: '2026-03-15', createdAt: '2026-03-15' },
-  { id: 30, projectId: '', type: 'thu', amount: 50_000_000, category: 'ung', person: 'Anh Vũ', description: 'Mượn anh Vũ', date: '2026-01-20', createdAt: '2026-01-20' },
-  { id: 31, projectId: '', type: 'chi', amount: 50_000_000, category: 'ung', person: 'Anh Vũ', description: 'Trả hết anh Vũ', date: '2026-03-01', createdAt: '2026-03-01' },
-  { id: 32, projectId: '', type: 'thu', amount: 30_000_000, category: 'ung', person: 'Mẹ', description: 'Mẹ hỗ trợ mua thiết bị', date: '2026-01-10', createdAt: '2026-01-10' },
-  { id: 33, projectId: '', type: 'chi', amount: 30_000_000, category: 'ung', person: 'Mẹ', description: 'Trả lại mẹ', date: '2026-02-20', createdAt: '2026-02-20' },
+  // ─── Nợ & Vay Transactions ─────────────────────────
+  { id: 28, projectId: '', type: 'thu', amount: 100_000_000, category: 'vay_ung', person: 'ACB', description: 'Vay ACB lãi suất 0.8%/tháng', date: '2026-02-01', createdAt: '2026-02-01' },
+  { id: 29, projectId: '', type: 'chi', amount: 30_000_000, category: 'tra_no', person: 'ACB', description: 'Trả nợ ACB đợt 1', date: '2026-03-15', createdAt: '2026-03-15' },
+  { id: 30, projectId: '', type: 'thu', amount: 50_000_000, category: 'vay_ung', person: 'Anh Vũ', description: 'Mượn anh Vũ', date: '2026-01-20', createdAt: '2026-01-20' },
+  { id: 31, projectId: '', type: 'chi', amount: 50_000_000, category: 'tra_no', person: 'Anh Vũ', description: 'Trả hết anh Vũ', date: '2026-03-01', createdAt: '2026-03-01' },
+  { id: 32, projectId: '', type: 'thu', amount: 30_000_000, category: 'vay_ung', person: 'Mẹ', description: 'Mẹ hỗ trợ mua thiết bị', date: '2026-01-10', createdAt: '2026-01-10' },
+  { id: 33, projectId: '', type: 'chi', amount: 30_000_000, category: 'tra_no', person: 'Mẹ', description: 'Trả lại mẹ', date: '2026-02-20', createdAt: '2026-02-20' },
 
   // ─── Ứng trước nhân viên (Company Advances) ────────
-  { id: 34, projectId: 'p1', type: 'chi', amount: 5_000_000, category: 'ungcty', person: 'Trung', description: 'Ứng mua ổ cứng SSD', date: '2026-03-05', createdAt: '2026-03-05' },
-  { id: 35, projectId: 'p1', type: 'thu', amount: 5_000_000, category: 'ungcty', person: 'Trung', description: 'Trung hoàn trả tiền SSD', date: '2026-04-01', createdAt: '2026-04-01' },
-  { id: 36, projectId: 'p2', type: 'chi', amount: 8_000_000, category: 'ungcty', person: 'Hùng', description: 'Ứng tiền đi công tác', date: '2026-03-15', createdAt: '2026-03-15' },
-  { id: 37, projectId: '', type: 'chi', amount: 3_000_000, category: 'ungcty', person: 'Hùng', description: 'Ứng mua thiết bị nhỏ', date: '2026-04-02', createdAt: '2026-04-02' },
-  { id: 38, projectId: 'p2', type: 'thu', amount: 5_000_000, category: 'ungcty', person: 'Hùng', description: 'Hùng hoàn trả một phần', date: '2026-04-08', createdAt: '2026-04-08' },
-  { id: 39, projectId: 'p5', type: 'chi', amount: 2_000_000, category: 'ungcty', person: 'Linh', description: 'Ứng mua phụ kiện quay', date: '2026-04-03', createdAt: '2026-04-03' },
+  { id: 34, projectId: 'p1', type: 'chi', amount: 5_000_000, category: 'chi_ung', person: 'Trung', description: 'Ứng mua ổ cứng SSD', date: '2026-03-05', createdAt: '2026-03-05' },
+  { id: 35, projectId: 'p1', type: 'thu', amount: 5_000_000, category: 'thu_ung', person: 'Trung', description: 'Trung hoàn trả tiền SSD', date: '2026-04-01', createdAt: '2026-04-01' },
+  { id: 36, projectId: 'p2', type: 'chi', amount: 8_000_000, category: 'chi_ung', person: 'Hùng', description: 'Ứng tiền đi công tác', date: '2026-03-15', createdAt: '2026-03-15' },
+  { id: 37, projectId: '', type: 'chi', amount: 3_000_000, category: 'chi_ung', person: 'Hùng', description: 'Ứng mua thiết bị nhỏ', date: '2026-04-02', createdAt: '2026-04-02' },
+  { id: 38, projectId: 'p2', type: 'thu', amount: 5_000_000, category: 'thu_ung', person: 'Hùng', description: 'Hùng hoàn trả một phần', date: '2026-04-08', createdAt: '2026-04-08' },
+  { id: 39, projectId: 'p5', type: 'chi', amount: 2_000_000, category: 'chi_ung', person: 'Linh', description: 'Ứng mua phụ kiện quay', date: '2026-04-03', createdAt: '2026-04-03' },
 ];
 
 // ─── Mock Payment Milestones (Dynamic) ──────────────
