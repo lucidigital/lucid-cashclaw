@@ -44,7 +44,9 @@ function parseAmount(raw: string): number {
   if (s.endsWith('ty') || s.endsWith('tỷ')) return parseFloat(s) * 1_000_000_000;
   if (s.endsWith('tr')) return parseFloat(s) * 1_000_000;
   if (s.endsWith('k')) return parseFloat(s) * 1_000;
-  return parseFloat(s) || 0;
+  // If plain number (no suffix), treat as triệu (matching the UI label)
+  const num = parseFloat(s.replace(/\./g, ''));
+  return isNaN(num) ? 0 : num * 1_000_000;
 }
 
 export default function BudgetForecast() {
@@ -128,8 +130,8 @@ export default function BudgetForecast() {
     setFormCat(line.category);
     setFormDesc(line.description);
     setFormPerson(line.person || '');
-    setFormEstimated(formatFullVND(line.estimatedAmount).replace('₫', ''));
-    setFormActual(line.actualAmount > 0 ? formatFullVND(line.actualAmount).replace('₫', '') : '');
+    setFormEstimated(String(line.estimatedAmount / 1_000_000));
+    setFormActual(line.actualAmount > 0 ? String(line.actualAmount / 1_000_000) : '');
     setFormStatus(line.status);
     setFormNote(line.note || '');
     setShowDeleteConfirm(false);
@@ -562,8 +564,11 @@ export default function BudgetForecast() {
               {/* Amounts — Dự toán only, Thực tế tính tự động từ transactions */}
               <div className="form-group">
                 <label className="form-label">Dự toán <span className="form-required">*</span></label>
-                <input className="input" type="text" placeholder="VD: 45tr, 100k"
-                  value={formEstimated} onChange={e => setFormEstimated(e.target.value)} required />
+                <div className="amount-input-wrapper">
+                  <input className="input" type="text" placeholder="VD: 15"
+                    value={formEstimated} onChange={e => setFormEstimated(e.target.value)} required />
+                  <span className="currency">triệu ₫</span>
+                </div>
                 {formEstimated && parseAmount(formEstimated) > 0 && (
                   <span className="form-hint amount-preview">= {formatFullVND(parseAmount(formEstimated))}</span>
                 )}
