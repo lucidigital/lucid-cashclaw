@@ -286,12 +286,6 @@ export default function BudgetForecast() {
     const totContract  = lineData.reduce((s, d) => s + d.totalContract, 0);
     const totPaidLines = lineData.reduce((s, d) => s + d.paid, 0);
 
-    // Tính tổng CHI thực tế từ transactions (loại trừ debt/advance)
-    // Overflow = chi không được gắn vào budget line nào
-    const unlinkedChi = transactions
-      .filter(t => t.projectId === activeProject && t.type === 'chi' && !DEBT_CATS.includes(t.category) && !t.budgetLineId)
-      .reduce((s, t) => s + t.amount, 0);
-
     const totalActualChi = transactions
       .filter(t => t.projectId === activeProject && t.type === 'chi' && !DEBT_CATS.includes(t.category))
       .reduce((s, t) => s + t.amount, 0);
@@ -299,9 +293,7 @@ export default function BudgetForecast() {
     // Overflow = max(0, tổng thực tế - tổng dự toán)
     const overflowPaid = Math.max(0, totalActualChi - totEst);
     const hasOverflow  = overflowPaid > 0;
-    // Also show unlinked chi count as tooltip info
-    const unlinkedCount = transactions
-      .filter(t => t.projectId === activeProject && t.type === 'chi' && !DEBT_CATS.includes(t.category) && !t.budgetLineId).length;
+    const grandTotOutstanding = totContract - totPaidLines;
 
     return (
       <div className="card budget-table-card">
