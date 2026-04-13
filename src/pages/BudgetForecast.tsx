@@ -265,31 +265,19 @@ export default function BudgetForecast() {
       return { ...line, cat, paid, ps, totalContract, outstanding, pct };
     });
 
-    // ── Overflow row: tổng chi thực tế vượt ngoài dự toán ─
+    // ── Overflow row: tổng đã trả vượt ngoài dự toán ────
     const totEst       = lineData.reduce((s, d) => s + d.estimatedAmount, 0);
     const totPS        = lineData.reduce((s, d) => s + d.ps, 0);
     const totContract  = lineData.reduce((s, d) => s + d.totalContract, 0);
     const totPaidLines = lineData.reduce((s, d) => s + d.paid, 0);
 
-    // All chi transactions for project, excluding debt/advance
-    const allChiTxns = transactions.filter(
-      t => t.projectId === activeProject && t.type === 'chi' && !DEBT_CATS.includes(t.category)
-    );
-    const totalActualChi = allChiTxns.reduce((s, t) => s + t.amount, 0);
-
-    // Phần chi chưa được gắn vào bất kỳ budget line nào (không match tên người)
-    const personNames = new Set(lines.map(l => l.person).filter(Boolean));
-    const unattributedChi = allChiTxns
-      .filter(t => !t.person || !personNames.has(t.person))
-      .reduce((s, t) => s + t.amount, 0);
-
-    // Overflow = max(0, tổng chi thực tế - tổng dự toán)
-    const overflowPaid = Math.max(0, totalActualChi - totEst);
+    // Overflow = max(0, tổng đã thanh toán - tổng dự toán)
+    // Dùng cùng nguồn data với các rows để nhất quán
+    const overflowPaid = Math.max(0, totPaidLines - totEst);
     const hasOverflow  = overflowPaid > 0;
 
-    // Grand totals include overflow row
-    const grandTotPaid        = totPaidLines + (hasOverflow ? overflowPaid : 0);
-    const grandTotOutstanding = totContract - grandTotPaid;
+    // Grand totals (không cộng double, totPaidLines đã bao gồm tất cả)
+    const grandTotOutstanding = totContract - totPaidLines;
 
     return (
       <div className="card budget-table-card">
@@ -363,7 +351,7 @@ export default function BudgetForecast() {
                 {totPS > 0 ? `+${formatVND(totPS)}` : '—'}
               </span>
               <span className="bt-amount bt-right" style={{ fontWeight: 800 }}>{formatVND(totContract)}</span>
-              <span className="bt-amount bt-right text-income" style={{ fontWeight: 800 }}>{formatVND(grandTotPaid)}</span>
+              <span className="bt-amount bt-right text-income" style={{ fontWeight: 800 }}>{formatVND(totPaidLines)}</span>
               <span className={`bt-amount bt-right ${grandTotOutstanding > 0 ? 'text-danger' : 'text-income'}`} style={{ fontWeight: 800 }}>
                 {formatVND(grandTotOutstanding)}
               </span>
