@@ -248,12 +248,17 @@ export default function BudgetForecast() {
     // Compute per-line data with auto-computed paid amounts
     const lineData = lines.map(line => {
       const cat = catMap[line.category];
-      // Auto-compute "đã trả" from transactions
-      const paid = line.person
+      // Auto-compute "đã trả": prioritize budget_line_id match, fallback to person match
+      const paidByLineId = transactions
+        .filter(t => t.budgetLineId === line.id && t.type === 'chi' && !DEBT_CATS.includes(t.category))
+        .reduce((s, t) => s + t.amount, 0);
+      const paidByPerson = line.person
         ? transactions
-            .filter(t => t.projectId === activeProject && t.person === line.person && t.type === 'chi' && !DEBT_CATS.includes(t.category))
+            .filter(t => t.projectId === activeProject && t.person === line.person && t.type === 'chi' && !DEBT_CATS.includes(t.category) && !t.budgetLineId)
             .reduce((s, t) => s + t.amount, 0)
-        : line.actualAmount;
+        : 0;
+      // Use lineId-matched first; if none, fallback to person-match (for legacy data)
+      const paid = paidByLineId > 0 ? paidByLineId : (paidByPerson || line.actualAmount);
       // Phát sinh for this person + project
       const ps = line.person
         ? phatSinhs
@@ -273,18 +278,21 @@ export default function BudgetForecast() {
     const totPaidLines = lineData.reduce((s, d) => s + d.paid, 0);
 
     // Tính tổng CHI thực tế từ transactions (loại trừ debt/advance)
-    // Cách này capture được ps_nhansu (Giang Lumina) không nằm trong budget line nào
+    // Overflow = chi không được gắn vào budget line nào
+    const unlinkedChi = transactions
+      .filter(t => t.projectId === activeProject && t.type === 'chi' && !DEBT_CATS.includes(t.category) && !t.budgetLineId)
+      .reduce((s, t) => s + t.amount, 0);
+
     const totalActualChi = transactions
       .filter(t => t.projectId === activeProject && t.type === 'chi' && !DEBT_CATS.includes(t.category))
       .reduce((s, t) => s + t.amount, 0);
 
-    // Overflow = tổng thực tế từ txns - tổng dự toán
-    // (totPaidLines chỉ capture các chi trong budget lines, bỏ sót ps_nhansu không có person match)
+    // Overflow = max(0, tổng thực tế - tổng dự toán)
     const overflowPaid = Math.max(0, totalActualChi - totEst);
     const hasOverflow  = overflowPaid > 0;
-
-    // Grand totals: dùng totPaidLines cho rows, overflow là row riêng biệt
-    const grandTotOutstanding = totContract - totPaidLines;
+    // Also show unlinked chi count as tooltip info
+    const unlinkedCount = transactions
+      .filter(t => t.projectId === activeProject && t.type === 'chi' && !DEBT_CATS.includes(t.category) && !t.budgetLineId).length;
 
     return (
       <div className="card budget-table-card">
@@ -550,25 +558,16 @@ export default function BudgetForecast() {
                   value={formDesc} onChange={e => setFormDesc(e.target.value)} />
               </div>
 
-              {/* Amounts */}
-              <div className="form-row">
-                <div className="form-group flex-1">
-                  <label className="form-label">Dự toán <span className="form-required">*</span></label>
-                  <input className="input" type="text" placeholder="VD: 45tr, 100k"
-                    value={formEstimated} onChange={e => setFormEstimated(e.target.value)} required />
-                  {formEstimated && parseAmount(formEstimated) > 0 && (
-                    <span className="form-hint amount-preview">= {formatFullVND(parseAmount(formEstimated))}</span>
-                  )}
-                </div>
-                <div className="form-group flex-1">
-                  <label className="form-label">Thực tế</label>
-                  <input className="input" type="text" placeholder="0 nếu chưa phát sinh"
-                    value={formActual} onChange={e => setFormActual(e.target.value)} />
-                  {formActual && parseAmount(formActual) > 0 && (
-                    <span className="form-hint amount-preview">= {formatFullVND(parseAmount(formActual))}</span>
-                  )}
-                </div>
+              {/* Amounts — Dự toán only, Thực tế tính tự động từ transactions */}
+              <div className="form-group">
+                <label className="form-label">Dự toán <span className="form-required">*</span></label>
+                <input className="input" type="text" placeholder="VD: 45tr, 100k"
+                  value={formEstimated} onChange={e => setFormEstimated(e.target.value)} required />
+                {formEstimated && parseAmount(formEstimated) > 0 && (
+                  <span className="form-hint amount-preview">= {formatFullVND(parseAmount(formEstimated))}</span>
+                )}
               </div>
+              <span className="form-hint" style={{marginTop: -8}}>💡 Thực tế sẽ tự động tính từ transactions khi giao dịch được gắn vào dòng này</span>
 
               {/* Status */}
               <div className="form-group">

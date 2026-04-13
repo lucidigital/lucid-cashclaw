@@ -51,6 +51,7 @@ export function rowToTransaction(row: Record<string, any>): Transaction {
     amount: row.amount,
     category: row.category,
     person: row.person || undefined,
+    budgetLineId: row.budget_line_id || undefined,
     description: row.description,
     date: row.date,
     createdAt: row.created_at?.split('T')[0] || '',
@@ -130,13 +131,14 @@ export function projectToRow(data: Partial<Project>) {
 export function transactionToRow(data: Partial<Transaction>) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const row: Record<string, any> = {};
-  if (data.projectId !== undefined) row.project_id = data.projectId;
-  if (data.type !== undefined) row.type = data.type;
-  if (data.amount !== undefined) row.amount = data.amount;
-  if (data.category !== undefined) row.category = data.category;
-  if (data.person !== undefined) row.person = data.person;
-  if (data.description !== undefined) row.description = data.description;
-  if (data.date !== undefined) row.date = data.date;
+  if (data.projectId    !== undefined) row.project_id     = data.projectId;
+  if (data.type         !== undefined) row.type           = data.type;
+  if (data.amount       !== undefined) row.amount         = data.amount;
+  if (data.category     !== undefined) row.category       = data.category;
+  if (data.person       !== undefined) row.person         = data.person;
+  if (data.budgetLineId !== undefined) row.budget_line_id = data.budgetLineId || null;
+  if (data.description  !== undefined) row.description    = data.description;
+  if (data.date         !== undefined) row.date           = data.date;
   return row;
 }
 

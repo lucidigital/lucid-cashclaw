@@ -21,6 +21,7 @@ export interface Transaction {
   amount: number;
   category: string;               // See CATEGORIES_THU / CATEGORIES_CHI
   person?: string;
+  budgetLineId?: string;          // Link to budget_lines.id (null = overflow)
   description: string;
   date: string;
   createdAt: string;

@@ -1,7 +1,8 @@
-// ─── Transaction Form Modal — Add / Edit ────────────
-import { useState, useEffect } from 'react';
+// ─── Transaction Form Modal — Add / Edit ────────────────
+import { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import PersonAutocomplete from './PersonAutocomplete';
+import BudgetLineAutocomplete from './BudgetLineAutocomplete';
 import { CATEGORIES_THU, CATEGORIES_CHI, type Transaction } from '../data/mockData';
 import { useData } from '../data/DataContext';
 
@@ -13,7 +14,7 @@ interface Props {
 }
 
 export default function TransactionFormModal({ open, onClose, editTransaction, defaultProjectId }: Props) {
-  const { projects, addTransaction, updateTransaction } = useData();
+  const { projects, budgetLines, addTransaction, updateTransaction } = useData();
   const isEdit = !!editTransaction;
 
   const [type, setType] = useState<'thu' | 'chi'>('chi');
@@ -21,6 +22,7 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
   const [category, setCategory] = useState('');
   const [projectId, setProjectId] = useState('');
   const [person, setPerson] = useState('');
+  const [budgetLineId, setBudgetLineId] = useState<string | undefined>(undefined);
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -34,6 +36,7 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
       setCategory(editTransaction.category);
       setProjectId(editTransaction.projectId);
       setPerson(editTransaction.person || '');
+      setBudgetLineId(editTransaction.budgetLineId);
       setDescription(editTransaction.description);
       setDate(editTransaction.date);
     } else {
@@ -42,6 +45,7 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
       setCategory('');
       setProjectId(defaultProjectId || '');
       setPerson('');
+      setBudgetLineId(undefined);
       setDescription('');
       setDate(new Date().toISOString().split('T')[0]);
     }
@@ -51,6 +55,16 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
   useEffect(() => {
     if (!isEdit) setCategory('');
   }, [type, isEdit]);
+
+  // Budget lines for current project + person (for Chi autocomplete)
+  const filteredBudgetLines = useMemo(() =>
+    budgetLines.filter(bl =>
+      bl.projectId === projectId &&
+      bl.type === 'chi' &&
+      (!person || !bl.person || bl.person.toLowerCase() === person.toLowerCase())
+    ),
+    [budgetLines, projectId, person]
+  );
 
   const parseAmount = (val: string): number => {
     const cleaned = val.replace(/[^\d.]/g, '');
@@ -69,6 +83,7 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
       category: category || (type === 'chi' ? 'khac' : 'thukhac'),
       projectId,
       person: person.trim() || undefined,
+      budgetLineId: type === 'chi' ? budgetLineId : undefined,
       description: description.trim(),
       date,
     };
@@ -170,7 +185,22 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
       {/* Description */}
       <div className="form-group">
         <label>Mô tả <span className="required">*</span></label>
-        <textarea className="input" placeholder="VD: Comp 20 shot, render farm..." value={description} onChange={e => setDescription(e.target.value)} />
+        {type === 'chi' ? (
+          <BudgetLineAutocomplete
+            value={description}
+            budgetLineId={budgetLineId}
+            onChange={(desc, lineId) => { setDescription(desc); setBudgetLineId(lineId); }}
+            budgetLines={filteredBudgetLines}
+            placeholder="Chọn từ dự toán hoặc ghi tự do..."
+          />
+        ) : (
+          <textarea
+            className="input"
+            placeholder="VD: Đặt cọc 50%, Thanh toán đợt 2..."
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+          />
+        )}
       </div>
     </Modal>
   );

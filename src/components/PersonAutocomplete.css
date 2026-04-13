@@ -154,7 +154,6 @@
   flex-shrink: 0;
 }
 
-/* Custom "use as-is" option */
 .pac-option-custom {
   border-top: 1px dashed rgba(255,255,255,0.08) !important;
   opacity: 0.7;
@@ -162,4 +161,43 @@
 
 .pac-option-custom:hover {
   opacity: 1;
+}
+
+/* ── BudgetLineAutocomplete extras ──────────────────── */
+.pac-input-linked {
+  border-color: rgba(108, 92, 231, 0.5) !important;
+}
+
+.pac-linked-badge {
+  position: absolute;
+  right: 32px;
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+.pac-section-label {
+  padding: 6px 14px 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.pac-hint-linked {
+  color: #00b894 !important;
+  font-weight: 600;
+}
+
+.pac-hint-overflow {
+  color: #fdcb6e !important;
+  font-weight: 600;
+}
+
+.pac-empty {
+  padding: 12px 14px;
+  color: var(--text-muted, #888);
+  font-size: 0.82rem;
+  text-align: center;
 }
