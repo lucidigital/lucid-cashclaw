@@ -471,9 +471,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .filter(ps => ps.projectId === line.projectId && ps.person === person)
         .reduce((s, ps) => s + ps.amount, 0);
 
-      // Paid = transactions matching project + person + chi (excluding ung/ungcty)
+      // Paid = chi transactions matching project + person
+      // Exclude: debt/advance cats, AND ps_nhansu/ps_thu (phát sinh ≠ payment for original budget)
+      const DEBT_CATS_PAY = ['vay_ung', 'tra_no', 'chi_ung', 'thu_ung', 'ung', 'ungcty'];
+      const PS_CATS = ['ps_nhansu', 'ps_thu'];
       const paid = transactions
-        .filter(t => t.projectId === line.projectId && t.person === person && t.type === 'chi' && t.category !== 'ung' && t.category !== 'ungcty')
+        .filter(t =>
+          t.projectId === line.projectId &&
+          t.person === person &&
+          t.type === 'chi' &&
+          !DEBT_CATS_PAY.includes(t.category) &&
+          !PS_CATS.includes(t.category)  // ← phát sinh không tính vào đã trả
+        )
         .reduce((s, t) => s + t.amount, 0);
 
       byPerson[person].totalEstimated += line.estimatedAmount;
