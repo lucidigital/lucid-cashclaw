@@ -266,18 +266,24 @@ export default function BudgetForecast() {
       return { ...line, cat, paid, ps, totalContract, outstanding, pct };
     });
 
-    // ── Overflow row: tổng đã trả vượt ngoài dự toán ────
+    // ── Overflow row: chi thực tế vượt ngoài dự toán ────────
     const totEst       = lineData.reduce((s, d) => s + d.estimatedAmount, 0);
     const totPS        = lineData.reduce((s, d) => s + d.ps, 0);
     const totContract  = lineData.reduce((s, d) => s + d.totalContract, 0);
     const totPaidLines = lineData.reduce((s, d) => s + d.paid, 0);
 
-    // Overflow = max(0, tổng đã thanh toán - tổng dự toán)
-    // Dùng cùng nguồn data với các rows để nhất quán
-    const overflowPaid = Math.max(0, totPaidLines - totEst);
+    // Tính tổng CHI thực tế từ transactions (loại trừ debt/advance)
+    // Cách này capture được ps_nhansu (Giang Lumina) không nằm trong budget line nào
+    const totalActualChi = transactions
+      .filter(t => t.projectId === activeProject && t.type === 'chi' && !DEBT_CATS.includes(t.category))
+      .reduce((s, t) => s + t.amount, 0);
+
+    // Overflow = tổng thực tế từ txns - tổng dự toán
+    // (totPaidLines chỉ capture các chi trong budget lines, bỏ sót ps_nhansu không có person match)
+    const overflowPaid = Math.max(0, totalActualChi - totEst);
     const hasOverflow  = overflowPaid > 0;
 
-    // Grand totals (không cộng double, totPaidLines đã bao gồm tất cả)
+    // Grand totals: dùng totPaidLines cho rows, overflow là row riêng biệt
     const grandTotOutstanding = totContract - totPaidLines;
 
     return (
