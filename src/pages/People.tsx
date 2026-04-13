@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useData } from '../data/DataContext';
-import { PEOPLE_TYPES, MOCK_PEOPLE } from '../data/mockData';
+import { PEOPLE_TYPES } from '../data/mockData';
 import type { Person } from '../data/mockData';
 import './People.css';
 
@@ -13,10 +13,7 @@ const emptyForm = (): Omit<Person, 'id' | 'createdAt'> => ({
 });
 
 export default function People() {
-  const { people: dbPeople, addPerson, updatePerson, deletePerson } = useData();
-
-  // Fallback to mock if DB has no data yet
-  const people = dbPeople.length > 0 ? dbPeople : MOCK_PEOPLE;
+  const { people, addPerson, updatePerson, deletePerson } = useData();
 
   // ─── UI State ────────────────────────────────────
   const [search, setSearch] = useState('');
@@ -26,6 +23,7 @@ export default function People() {
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // ─── Filtered list ───────────────────────────────
   const filtered = useMemo(() => {
@@ -70,6 +68,7 @@ export default function People() {
   async function handleSave() {
     if (!form.name.trim()) return;
     setSaving(true);
+    setErrorMsg(null);
     try {
       const payload = {
         name: form.name.trim(),
@@ -86,8 +85,9 @@ export default function People() {
         await addPerson(payload);
       }
       closeModal();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
+      setErrorMsg('Lỗi: ' + (err instanceof Error ? err.message : 'Không thể lưu. Kiểm tra kết nối Supabase.'));
     } finally {
       setSaving(false);
     }
@@ -95,11 +95,13 @@ export default function People() {
 
   async function handleDelete(id: string) {
     setSaving(true);
+    setErrorMsg(null);
     try {
       await deletePerson(id);
       closeModal();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
+      setErrorMsg('Lỗi: ' + (err instanceof Error ? err.message : 'Không thể xóa. Kiểm tra kết nối Supabase.'));
     } finally {
       setSaving(false);
     }
@@ -205,6 +207,14 @@ export default function People() {
               <h2>{editing ? '✏️ Sửa thông tin' : '＋ Thêm nhân sự / đối tác'}</h2>
               <button className="modal-close" onClick={closeModal}>✕</button>
             </div>
+
+            {/* Error banner */}
+            {errorMsg && (
+              <div className="delete-confirm-banner" style={{ background: 'rgba(214,48,49,0.12)', borderColor: 'rgba(214,48,49,0.3)' }}>
+                <span>🚨 {errorMsg}</span>
+                <button className="btn btn-ghost" style={{ marginTop: 8 }} onClick={() => setErrorMsg(null)}>Đóng</button>
+              </div>
+            )}
 
             {/* Delete confirm */}
             {deleteConfirm && (
