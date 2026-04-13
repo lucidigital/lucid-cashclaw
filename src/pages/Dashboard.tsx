@@ -52,27 +52,36 @@ export default function Dashboard() {
   }, 0);
 
   // ─── Dòng tiền sắp tới ───
-  // Tất cả project non-archived, trừ những job đã thu đủ (remaining = 0)
+  // Tất cả project non-archived: remaining = budget/dự thu - đã thu thực tế
   const thuLines = budgetLines.filter(bl => bl.type === 'thu');
   const upcomingCashFlow: Array<{ projectName: string; label: string; remaining: number; hasLine: boolean; isCompleted: boolean }> = [];
 
   for (const proj of nonArchivedProjects) {
     const projThuLines = thuLines.filter(bl => bl.projectId === proj.id);
     const isCompleted = proj.status === 'completed';
+
+    // Tổng thu thực tế của project (không quan tâm budgetLineId)
+    const totalReceived = transactions
+      .filter(t => t.projectId === proj.id && t.type === 'thu')
+      .reduce((ss, t) => ss + t.amount, 0);
+
     if (projThuLines.length > 0) {
-      for (const bl of projThuLines) {
-        const received = transactions
-          .filter(t => t.budgetLineId === bl.id && t.type === 'thu')
-          .reduce((ss, t) => ss + t.amount, 0);
-        const remaining = bl.estimatedAmount - received;
-        if (remaining > 0) {
-          upcomingCashFlow.push({ projectName: proj.name, label: bl.description || bl.category, remaining, hasLine: true, isCompleted });
+      // Có budget lines thu → so sánh tổng estimated vs tổng đã thu
+      const totalEstimated = projThuLines.reduce((s, bl) => s + bl.estimatedAmount, 0);
+      const remaining = totalEstimated - totalReceived;
+      if (remaining > 0) {
+        // Hiện từng dòng còn thiếu (pro-rata nếu đã nhận một phần)
+        let received = totalReceived;
+        for (const bl of projThuLines) {
+          const lineRemaining = Math.max(0, bl.estimatedAmount - received);
+          received = Math.max(0, received - bl.estimatedAmount);
+          if (lineRemaining > 0) {
+            upcomingCashFlow.push({ projectName: proj.name, label: bl.description || bl.category, remaining: lineRemaining, hasLine: true, isCompleted });
+          }
         }
       }
     } else if ((proj.budget || 0) > 0) {
-      const totalReceived = transactions
-        .filter(t => t.projectId === proj.id && t.type === 'thu')
-        .reduce((ss, t) => ss + t.amount, 0);
+      // Không có budget lines → fallback theo project.budget
       const remaining = (proj.budget || 0) - totalReceived;
       if (remaining > 0) {
         upcomingCashFlow.push({ projectName: proj.name, label: 'Budget (chưa có dự thu)', remaining, hasLine: false, isCompleted });
