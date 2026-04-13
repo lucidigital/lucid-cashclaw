@@ -13,6 +13,7 @@ export interface BudgetLine {
   estimatedAmount: number;
   actualAmount: number;        // Auto-calculated from real transactions
   status: 'planned' | 'partial' | 'done' | 'over';
+  expectedDate?: string;       // Ngày dự kiến thu/trả (YYYY-MM-DD)
   note?: string;
 }
 

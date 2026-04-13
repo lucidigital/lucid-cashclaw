@@ -54,7 +54,7 @@ export default function Dashboard() {
   // ─── Dòng tiền sắp tới ───
   // Tất cả project non-archived: remaining = budget/dự thu - đã thu thực tế
   const thuLines = budgetLines.filter(bl => bl.type === 'thu');
-  const upcomingCashFlow: Array<{ projectName: string; label: string; remaining: number; hasLine: boolean; isCompleted: boolean }> = [];
+  const upcomingCashFlow: Array<{ projectName: string; label: string; remaining: number; hasLine: boolean; isCompleted: boolean; expectedDate?: string }> = [];
 
   for (const proj of nonArchivedProjects) {
     const projThuLines = thuLines.filter(bl => bl.projectId === proj.id);
@@ -76,7 +76,7 @@ export default function Dashboard() {
           const lineRemaining = Math.max(0, bl.estimatedAmount - received);
           received = Math.max(0, received - bl.estimatedAmount);
           if (lineRemaining > 0) {
-            upcomingCashFlow.push({ projectName: proj.name, label: bl.description || bl.category, remaining: lineRemaining, hasLine: true, isCompleted });
+            upcomingCashFlow.push({ projectName: proj.name, label: bl.description || bl.category, remaining: lineRemaining, hasLine: true, isCompleted, expectedDate: bl.expectedDate });
           }
         }
       }
@@ -84,11 +84,17 @@ export default function Dashboard() {
       // Không có budget lines → fallback theo project.budget
       const remaining = (proj.budget || 0) - totalReceived;
       if (remaining > 0) {
-        upcomingCashFlow.push({ projectName: proj.name, label: 'Budget (chưa có dự thu)', remaining, hasLine: false, isCompleted });
+        upcomingCashFlow.push({ projectName: proj.name, label: 'Budget (chưa có dự thu)', remaining, hasLine: false, isCompleted, expectedDate: undefined });
       }
     }
   }
-  upcomingCashFlow.sort((a, b) => b.remaining - a.remaining);
+  // Sort: có ngày trước (gần nhất), không có ngày xuống dưới
+  upcomingCashFlow.sort((a, b) => {
+    if (a.expectedDate && b.expectedDate) return new Date(a.expectedDate).getTime() - new Date(b.expectedDate).getTime();
+    if (a.expectedDate) return -1;
+    if (b.expectedDate) return 1;
+    return b.remaining - a.remaining;
+  });
 
 
   // ─── Chi by category ─────────────────────────────
@@ -243,10 +249,20 @@ export default function Dashboard() {
         <div className="card dash-card">
           <h3 className="dash-card-title">📅 Dòng tiền sắp tới</h3>
           <div className="upcoming-list">
-            {upcomingCashFlow.slice(0, 8).map((item, idx) => (
+            {upcomingCashFlow.slice(0, 8).map((item, idx) => {
+              const date = item.expectedDate ? new Date(item.expectedDate) : null;
+              const daysDiff = date ? Math.ceil((date.getTime() - Date.now()) / 86_400_000) : null;
+              return (
               <div key={idx} className="upcoming-row">
-                <div className="upcoming-date-badge" style={{ background: item.hasLine ? 'rgba(0,184,148,0.15)' : 'rgba(255,255,255,0.04)' }}>
-                  <span style={{ fontSize: '1.2rem' }}>{item.hasLine ? '💵' : '📁'}</span>
+                <div className="upcoming-date-badge" style={{ background: date ? 'rgba(108,92,231,0.15)' : item.hasLine ? 'rgba(0,184,148,0.15)' : 'rgba(255,255,255,0.04)' }}>
+                  {date ? (
+                    <>
+                      <span className="upcoming-day">{date.getDate()}</span>
+                      <span className="upcoming-month">{date.toLocaleDateString('vi', { month: 'short' })}</span>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: '1.2rem' }}>{item.hasLine ? '💵' : '📁'}</span>
+                  )}
                 </div>
                 <div className="upcoming-info">
                   <span className="upcoming-name">
@@ -257,12 +273,16 @@ export default function Dashboard() {
                 </div>
                 <div className="upcoming-amount-box">
                   <span className="upcoming-amount text-income">{formatVND(item.remaining)}</span>
-                  <span className="upcoming-days" style={{ color: item.hasLine ? 'var(--color-income)' : 'var(--color-muted)' }}>
-                    {item.hasLine ? 'chưa nhận' : 'budget'}
+                  <span className={`upcoming-days ${daysDiff !== null && daysDiff <= 7 ? 'soon' : ''}`} style={{ color: daysDiff !== null && daysDiff <= 0 ? 'var(--color-danger)' : item.hasLine ? 'var(--color-income)' : 'var(--color-muted)' }}>
+                    {daysDiff === null ? (item.hasLine ? 'chưa nhận' : 'budget')
+                      : daysDiff <= 0 ? 'Quá hạn!'
+                      : daysDiff === 0 ? 'Hôm nay'
+                      : `${daysDiff} ngày`}
                   </span>
                 </div>
               </div>
-            ))}
+              );
+            })}
             {upcomingCashFlow.length === 0 && (
               <div className="empty-state">Tất cả các job đều đã thu đủ ! ✅</div>
             )}

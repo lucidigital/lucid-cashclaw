@@ -134,6 +134,7 @@ export function rowToBudgetLine(row: Record<string, any>): BudgetLine {
     estimatedAmount: row.estimated_amount,
     actualAmount: row.actual_amount,
     status: row.status,
+    expectedDate: row.expected_date || undefined,
     note: row.note || undefined,
   };
 }

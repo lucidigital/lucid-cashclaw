@@ -71,6 +71,7 @@ export default function BudgetForecast() {
   const [formActual, setFormActual] = useState('');
   const [formPerson, setFormPerson] = useState('');
   const [formStatus, setFormStatus] = useState<BudgetLine['status']>('planned');
+  const [formExpectedDate, setFormExpectedDate] = useState('');
   const [formNote, setFormNote] = useState('');
 
   const project = projects.find(p => p.id === activeProject);
@@ -114,7 +115,7 @@ export default function BudgetForecast() {
   function resetForm() {
     setFormType('chi'); setFormCat(''); setFormDesc('');
     setFormEstimated(''); setFormActual(''); setFormPerson('');
-    setFormStatus('planned'); setFormNote('');
+    setFormStatus('planned'); setFormExpectedDate(''); setFormNote('');
     setEditingId(null); setShowDeleteConfirm(false);
   }
 
@@ -133,6 +134,7 @@ export default function BudgetForecast() {
     setFormEstimated(String(line.estimatedAmount / 1_000_000));
     setFormActual(line.actualAmount > 0 ? String(line.actualAmount / 1_000_000) : '');
     setFormStatus(line.status);
+    setFormExpectedDate(line.expectedDate || '');
     setFormNote(line.note || '');
     setShowDeleteConfirm(false);
     setShowModal(true);
@@ -152,6 +154,7 @@ export default function BudgetForecast() {
       estimatedAmount: estimated,
       actualAmount: parseAmount(formActual),
       status: formStatus as BudgetLine['status'],
+      expectedDate: formExpectedDate || undefined,
       note: formNote || undefined,
     };
 
@@ -590,6 +593,27 @@ export default function BudgetForecast() {
                   ))}
                 </div>
               </div>
+
+              {/* Expected Date — chỉ hiện cho dòng thu */}
+              {formType === 'thu' && (
+                <div className="form-group">
+                  <label className="form-label">📅 Ngày dự kiến nhận tiền <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>(tuỳ chọn)</span></label>
+                  <input className="input" type="date"
+                    value={formExpectedDate}
+                    onChange={e => setFormExpectedDate(e.target.value)} />
+                  {formExpectedDate && (
+                    <span className="form-hint">
+                      {(() => {
+                        const d = new Date(formExpectedDate);
+                        const diff = Math.ceil((d.getTime() - Date.now()) / 86_400_000);
+                        return diff < 0 ? `⚠️ Đã qua ${Math.abs(diff)} ngày`
+                          : diff === 0 ? '📌 Hôm nay'
+                          : `📌 Còn ${diff} ngày`;
+                      })()}
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Note */}
               <div className="form-group">
