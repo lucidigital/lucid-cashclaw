@@ -1,0 +1,165 @@
+/* ─── PersonAutocomplete ─────────────────────────────── */
+.pac-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pac-label {
+  margin-bottom: 2px;
+}
+
+.pac-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pac-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 0.85rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pac-input {
+  width: 100%;
+  padding: 10px 36px 10px 34px;
+  background: var(--bg-input, rgba(255,255,255,0.05));
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  border-radius: var(--radius-md, 8px);
+  color: var(--text-primary, #fff);
+  font-family: var(--font-family, Inter, sans-serif);
+  font-size: 0.9rem;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.pac-input:focus {
+  outline: none;
+  border-color: var(--brand-primary, #6c5ce7);
+}
+
+.pac-focused .pac-input {
+  border-color: var(--brand-primary, #6c5ce7);
+}
+
+.pac-clear {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted, #888);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 4px;
+  border-radius: 50%;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+}
+
+.pac-clear:hover {
+  color: var(--text-primary, #fff);
+  background: rgba(255,255,255,0.08);
+}
+
+/* ── Dropdown ─────────────────────────────────────── */
+.pac-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card, #1a1a2e);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  z-index: 999;
+  overflow: hidden;
+  animation: pac-open 0.12s ease;
+}
+
+@keyframes pac-open {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.pac-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text-primary, #fff);
+  font-family: var(--font-family, Inter, sans-serif);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.pac-option:last-child {
+  border-bottom: none;
+}
+
+.pac-option:hover {
+  background: rgba(108, 92, 231, 0.12);
+}
+
+.pac-option-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.pac-option-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.pac-option-name {
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pac-option-role {
+  font-size: 0.72rem;
+  color: var(--text-muted, #888);
+  margin-top: 1px;
+}
+
+.pac-option-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Custom "use as-is" option */
+.pac-option-custom {
+  border-top: 1px dashed rgba(255,255,255,0.08) !important;
+  opacity: 0.7;
+}
+
+.pac-option-custom:hover {
+  opacity: 1;
+}

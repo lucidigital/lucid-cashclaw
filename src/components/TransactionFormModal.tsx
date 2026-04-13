@@ -1,6 +1,7 @@
 // ─── Transaction Form Modal — Add / Edit ────────────
 import { useState, useEffect } from 'react';
 import Modal from './Modal';
+import PersonAutocomplete from './PersonAutocomplete';
 import { CATEGORIES_THU, CATEGORIES_CHI, type Transaction } from '../data/mockData';
 import { useData } from '../data/DataContext';
 
@@ -153,8 +154,12 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
       {/* Person + Date */}
       <div className="form-row">
         <div className="form-group">
-          <label>Người / Vendor</label>
-          <input className="input" placeholder="VD: Hùng, ACB..." value={person} onChange={e => setPerson(e.target.value)} />
+          <label>Partners &amp; Staff</label>
+          <PersonAutocomplete
+            value={person}
+            onChange={setPerson}
+            placeholder="Hùng, Sound Studio..."
+          />
         </div>
         <div className="form-group">
           <label>Ngày</label>

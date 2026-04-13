@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { CATEGORIES_CHI, CATEGORIES_THU, formatVND, formatFullVND, getStatusLabel } from '../data/mockData';
 import { type BudgetLine } from '../data/budgetData';
 import { useData } from '../data/DataContext';
+import PersonAutocomplete from '../components/PersonAutocomplete';
 import './BudgetForecast.css';
 
 const ALL_CATS = [...CATEGORIES_THU, ...CATEGORIES_CHI];
@@ -525,10 +526,14 @@ export default function BudgetForecast() {
               {/* Person (Chi only) */}
               {formType === 'chi' && (
                 <div className="form-group">
-                  <label className="form-label">Người / Tổ chức <span className="form-required">*</span></label>
-                  <input className="input" type="text" placeholder="VD: Trung Ca, Studio XYZ, Thuế TNCN..."
-                    value={formPerson} onChange={e => setFormPerson(e.target.value)} autoFocus />
-                  <span className="form-hint">Tên chính xác để match với Transactions</span>
+                  <PersonAutocomplete
+                    label="Partners & Staff"
+                    required
+                    value={formPerson}
+                    onChange={setFormPerson}
+                    placeholder="VD: Trung Ca, Studio XYZ..."
+                    hint="Tên chính xác để match với Transactions"
+                  />
                 </div>
               )}
 
