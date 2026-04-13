@@ -52,12 +52,13 @@ export default function Dashboard() {
   }, 0);
 
   // ─── Dòng tiền sắp tới ───
-  // Dựa theo budget_lines thu (active), fallback → project.budget (active)
-  const thuLines = budgetLines.filter(bl => bl.type === 'thu' && activeProjectIds.has(bl.projectId));
-  const upcomingCashFlow: Array<{ projectName: string; label: string; remaining: number; hasLine: boolean }> = [];
+  // Tất cả project non-archived, trừ những job đã thu đủ (remaining = 0)
+  const thuLines = budgetLines.filter(bl => bl.type === 'thu');
+  const upcomingCashFlow: Array<{ projectName: string; label: string; remaining: number; hasLine: boolean; isCompleted: boolean }> = [];
 
-  for (const proj of activeProjects) {
+  for (const proj of nonArchivedProjects) {
     const projThuLines = thuLines.filter(bl => bl.projectId === proj.id);
+    const isCompleted = proj.status === 'completed';
     if (projThuLines.length > 0) {
       for (const bl of projThuLines) {
         const received = transactions
@@ -65,7 +66,7 @@ export default function Dashboard() {
           .reduce((ss, t) => ss + t.amount, 0);
         const remaining = bl.estimatedAmount - received;
         if (remaining > 0) {
-          upcomingCashFlow.push({ projectName: proj.name, label: bl.description || bl.category, remaining, hasLine: true });
+          upcomingCashFlow.push({ projectName: proj.name, label: bl.description || bl.category, remaining, hasLine: true, isCompleted });
         }
       }
     } else if ((proj.budget || 0) > 0) {
@@ -74,7 +75,7 @@ export default function Dashboard() {
         .reduce((ss, t) => ss + t.amount, 0);
       const remaining = (proj.budget || 0) - totalReceived;
       if (remaining > 0) {
-        upcomingCashFlow.push({ projectName: proj.name, label: 'Budget (chưa có dự thu)', remaining, hasLine: false });
+        upcomingCashFlow.push({ projectName: proj.name, label: 'Budget (chưa có dự thu)', remaining, hasLine: false, isCompleted });
       }
     }
   }
@@ -233,13 +234,16 @@ export default function Dashboard() {
         <div className="card dash-card">
           <h3 className="dash-card-title">📅 Dòng tiền sắp tới</h3>
           <div className="upcoming-list">
-            {upcomingCashFlow.slice(0, 6).map((item, idx) => (
+            {upcomingCashFlow.slice(0, 8).map((item, idx) => (
               <div key={idx} className="upcoming-row">
-                <div className="upcoming-date-badge" style={{ background: item.hasLine ? 'var(--color-income)20' : 'var(--color-muted)20' }}>
+                <div className="upcoming-date-badge" style={{ background: item.hasLine ? 'rgba(0,184,148,0.15)' : 'rgba(255,255,255,0.04)' }}>
                   <span style={{ fontSize: '1.2rem' }}>{item.hasLine ? '💵' : '📁'}</span>
                 </div>
                 <div className="upcoming-info">
-                  <span className="upcoming-name">{item.projectName}</span>
+                  <span className="upcoming-name">
+                    {item.projectName}
+                    {item.isCompleted && <span style={{ fontSize: '0.65rem', marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: 'rgba(0,184,148,0.15)', color: 'var(--color-income)' }}>✅ done</span>}
+                  </span>
                   <span className="upcoming-dot">{item.label}</span>
                 </div>
                 <div className="upcoming-amount-box">
