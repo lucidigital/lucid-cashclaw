@@ -182,3 +182,33 @@
   border-color: var(--color-expense);
   color: var(--color-expense);
 }
+
+/* ─── Archived tab pill ──────────────────────────── */
+.pill.pill-archived {
+  border-color: rgba(99, 110, 114, 0.4);
+  color: var(--text-muted);
+}
+
+.pill.pill-archived:hover {
+  background: rgba(99, 110, 114, 0.1);
+  color: var(--text-secondary);
+}
+
+.pill.pill-archived.active {
+  background: rgba(99, 110, 114, 0.15);
+  border-color: #636e72;
+  color: #b2bec3;
+}
+
+/* ─── Archived project card ──────────────────────── */
+.project-card-archived {
+  opacity: 0.55;
+  filter: saturate(0.4);
+  border-style: dashed !important;
+}
+
+.project-card-archived:hover {
+  opacity: 0.8;
+  filter: saturate(0.7);
+  border-color: #636e72 !important;
+}

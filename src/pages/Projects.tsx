@@ -13,7 +13,11 @@ export default function Projects() {
   const [showModal, setShowModal] = useState(false);
 
   const filtered = projects.filter(p => {
+    // 'all' tab hides archived by default
+    if (filter === 'all' && p.status === 'archived') return false;
+    // specific tab must match
     if (filter !== 'all' && p.status !== filter) return false;
+    // search filter
     if (search && !p.name.toLowerCase().includes(search.toLowerCase()) &&
         !p.client.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -24,14 +28,14 @@ export default function Projects() {
       {/* Toolbar */}
       <div className="projects-toolbar">
         <div className="filter-pills">
-          {['all', 'in_progress', 'review', 'completed'].map(f => {
+          {['all', 'in_progress', 'review', 'completed', 'archived'].map(f => {
             const info = f === 'all'
               ? { label: 'Tất cả', icon: '📁' }
               : getStatusLabel(f);
             return (
               <button
                 key={f}
-                className={`pill ${filter === f ? 'active' : ''}`}
+                className={`pill ${filter === f ? 'active' : ''} ${f === 'archived' ? 'pill-archived' : ''}`}
                 onClick={() => setFilter(f)}
               >
                 {'icon' in info ? info.icon : ''} {f === 'all' ? 'Tất cả' : info.label}
@@ -60,7 +64,8 @@ export default function Projects() {
           const txnCount = transactions.filter(t => t.projectId === project.id).length;
 
           return (
-            <div key={project.id} className="project-card card animate-slide-up" onClick={() => navigate(`/projects/${project.id}`)}>
+            <div key={project.id} className={`project-card card animate-slide-up ${project.status === 'archived' ? 'project-card-archived' : ''}`} onClick={() => navigate(`/projects/${project.id}`)}>
+
               <div className="pc-header">
                 <div>
                   <h3 className="pc-name">{project.name}</h3>
