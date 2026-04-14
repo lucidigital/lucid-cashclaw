@@ -180,6 +180,129 @@ export function DataProvider({ children }: { children: ReactNode }) {
     fetchAll();
   }, []);
 
+  // ─── Supabase Realtime — auto-sync when Tôm (bot) updates DB ──
+  useEffect(() => {
+    const channel = supabase
+      .channel('cashclaw-realtime')
+
+      // ── Transactions ──────────────────────────────────
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, (payload) => {
+        const newTxn = rowToTransaction(payload.new);
+        setTransactions(prev => {
+          if (prev.some(t => t.id === newTxn.id)) return prev; // dedupe
+          return [newTxn, ...prev];
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'transactions' }, (payload) => {
+        setTransactions(prev => prev.map(t => t.id === payload.new.id ? rowToTransaction(payload.new) : t));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'transactions' }, (payload) => {
+        setTransactions(prev => prev.filter(t => t.id !== payload.old.id));
+      })
+
+      // ── Budget Lines ──────────────────────────────────
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'budget_lines' }, (payload) => {
+        const newBl = rowToBudgetLine(payload.new);
+        setBudgetLines(prev => {
+          if (prev.some(bl => bl.id === newBl.id)) return prev;
+          return [...prev, newBl];
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'budget_lines' }, (payload) => {
+        setBudgetLines(prev => prev.map(bl => bl.id === payload.new.id ? rowToBudgetLine(payload.new) : bl));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'budget_lines' }, (payload) => {
+        setBudgetLines(prev => prev.filter(bl => bl.id !== payload.old.id));
+      })
+
+      // ── Projects ──────────────────────────────────────
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'projects' }, (payload) => {
+        const newProj = rowToProject(payload.new);
+        setProjects(prev => {
+          if (prev.some(p => p.id === newProj.id)) return prev;
+          return [newProj, ...prev];
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'projects' }, (payload) => {
+        setProjects(prev => prev.map(p => p.id === payload.new.id ? rowToProject(payload.new) : p));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'projects' }, (payload) => {
+        setProjects(prev => prev.filter(p => p.id !== payload.old.id));
+      })
+
+      // ── Phat Sinhs ────────────────────────────────────
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'phat_sinhs' }, (payload) => {
+        const newPs = rowToPhatSinh(payload.new);
+        setPhatSinhs(prev => {
+          if (prev.some(ps => ps.id === newPs.id)) return prev;
+          return [...prev, newPs];
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'phat_sinhs' }, (payload) => {
+        setPhatSinhs(prev => prev.map(ps => ps.id === payload.new.id ? rowToPhatSinh(payload.new) : ps));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'phat_sinhs' }, (payload) => {
+        setPhatSinhs(prev => prev.filter(ps => ps.id !== payload.old.id));
+      })
+
+      // ── Milestones ────────────────────────────────────
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'milestones' }, (payload) => {
+        const newMs = rowToMilestone(payload.new);
+        setMilestones(prev => {
+          if (prev.some(m => m.id === newMs.id)) return prev;
+          return [...prev, newMs];
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'milestones' }, (payload) => {
+        setMilestones(prev => prev.map(m => m.id === payload.new.id ? rowToMilestone(payload.new) : m));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'milestones' }, (payload) => {
+        setMilestones(prev => prev.filter(m => m.id !== payload.old.id));
+      })
+
+      // ── People ────────────────────────────────────────
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'people' }, (payload) => {
+        const newPer = rowToPerson(payload.new);
+        setPeople(prev => {
+          if (prev.some(p => p.id === newPer.id)) return prev;
+          return [newPer, ...prev];
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'people' }, (payload) => {
+        setPeople(prev => prev.map(p => p.id === payload.new.id ? rowToPerson(payload.new) : p));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'people' }, (payload) => {
+        setPeople(prev => prev.filter(p => p.id !== payload.old.id));
+      })
+
+      // ── Manual Debts ──────────────────────────────────
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'manual_debts' }, (payload) => {
+        const newMd = rowToManualDebt(payload.new);
+        setManualDebts(prev => {
+          if (prev.some(md => md.id === newMd.id)) return prev;
+          return [newMd, ...prev];
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'manual_debts' }, (payload) => {
+        setManualDebts(prev => prev.map(md => md.id === payload.new.id ? rowToManualDebt(payload.new) : md));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'manual_debts' }, (payload) => {
+        setManualDebts(prev => prev.filter(md => md.id !== payload.old.id));
+      })
+
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ CashClaw Realtime connected — live sync active');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.warn('⚠️ CashClaw Realtime error — check Supabase Realtime is enabled for tables');
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // ─── Project CRUD ─────────────────────────────────
   const addProject = useCallback(async (data: Omit<Project, 'id' | 'createdAt'>): Promise<Project> => {
     const row = projectToRow(data);
