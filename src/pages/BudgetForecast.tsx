@@ -237,7 +237,7 @@ export default function BudgetForecast() {
           {lineData.map(line => {
             const cat = catMap[line.category];
             return (
-              <div key={line.id} className={`budget-trow budget-thu-row ${line.status}`} onClick={() => openEdit(line)}>
+              <div key={line.id} className={`budget-trow budget-thu-row ${line.status}`} onDoubleClick={() => openEdit(line)} title="Double-click để sửa">
                 <span className="bt-cat">{cat?.icon || '📋'} {cat?.name || line.category}</span>
                 <span className="bt-desc">
                   {line.description}
@@ -383,7 +383,7 @@ export default function BudgetForecast() {
             <span className="bt-right">Còn nợ</span>
           </div>
           {lineData.map(d => (
-            <div key={d.id} className={`budget-trow budget-chi-row ${d.outstanding <= 0 ? 'settled' : ''}`} onClick={() => openEdit(d)}>
+            <div key={d.id} className={`budget-trow budget-chi-row ${d.outstanding <= 0 ? 'settled' : ''}`} onDoubleClick={() => openEdit(d)} title="Double-click để sửa">
               <span className="bt-person">{d.person || '—'}</span>
               <span className="bt-cat">{d.cat?.icon || '📋'} {d.cat?.name || d.category}</span>
               <span className="bt-desc">

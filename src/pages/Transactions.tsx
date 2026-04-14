@@ -106,8 +106,8 @@ export default function Transactions() {
               <div
                 key={t.id}
                 className="txn-row txn-row-clickable"
-                onClick={() => setEditTxn(t)}
-                title="Click để sửa"
+                onDoubleClick={() => setEditTxn(t)}
+                title="Double-click để sửa"
               >
                 <span className="txn-date">{new Date(t.date).toLocaleDateString('vi')}</span>
                 <span className={`txn-type ${t.type}`}>

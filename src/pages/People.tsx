@@ -178,7 +178,7 @@ export default function People() {
           ) : filtered.map((p, idx) => {
             const t = TYPE_MAP[p.type];
             return (
-              <div key={p.id} className="people-row" onClick={() => openEdit(p)}>
+              <div key={p.id} className="people-row" onDoubleClick={() => openEdit(p)} title="Double-click để sửa">
                 <span className="pt-num">{idx + 1}</span>
                 <span className="pt-name">
                   <span className="p-avatar" style={{ background: t?.color || '#6c5ce7' }}>
