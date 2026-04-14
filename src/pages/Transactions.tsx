@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '../data/DataContext';
-import { formatVND, CATEGORIES_CHI, CATEGORIES_THU, type Transaction } from '../data/mockData';
+import { formatVND, CATEGORIES_CHI, CATEGORIES_THU, PEOPLE_TYPES, type Transaction } from '../data/mockData';
 import TransactionFormModal from '../components/TransactionFormModal';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import './Transactions.css';
@@ -9,11 +9,26 @@ const ALL_CATEGORIES = [...CATEGORIES_THU, ...CATEGORIES_CHI];
 const catMap = Object.fromEntries(ALL_CATEGORIES.map(c => [c.code, c]));
 
 export default function Transactions() {
-  const { projects, transactions, deleteTransaction } = useData();
+  const { projects, transactions, people, deleteTransaction } = useData();
   const [typeFilter, setTypeFilter] = useState<'all' | 'thu' | 'chi'>('all');
   const [catFilter, setCatFilter] = useState('');
   const [projectFilter, setProjectFilter] = useState('');
   const [search, setSearch] = useState('');
+
+  // Person type filter — smart defaults by type
+  const ALL_TYPE_CODES = new Set(PEOPLE_TYPES.map(t => t.code));
+  const DEFAULT_PERSON_TYPES: Record<string, Set<string>> = {
+    thu:  new Set(['org', 'leader']),
+    chi:  new Set(['leader', 'staff', 'freelance', 'supplier']),
+    all:  new Set(ALL_TYPE_CODES),
+  };
+  const [personTypeFilter, setPersonTypeFilter] = useState<Set<string>>(new Set(ALL_TYPE_CODES));
+
+  // When typeFilter changes, reset personTypeFilter to smart default
+  useEffect(() => {
+    setPersonTypeFilter(new Set(DEFAULT_PERSON_TYPES[typeFilter]));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeFilter]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editTxn, setEditTxn] = useState<Transaction | null>(null);
@@ -28,6 +43,13 @@ export default function Transactions() {
       const matched = t.description.toLowerCase().includes(q)
         || (t.person && t.person.toLowerCase().includes(q));
       if (!matched) return false;
+    }
+    // Person type filter (skip if all types selected)
+    if (personTypeFilter.size < ALL_TYPE_CODES.size) {
+      if (t.person) {
+        const personObj = people.find(p => p.name === t.person);
+        if (personObj && !personTypeFilter.has(personObj.type)) return false;
+      }
     }
     return true;
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -74,6 +96,28 @@ export default function Transactions() {
         <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
           + Thêm giao dịch
         </button>
+      </div>
+
+      {/* Person Type Filter Pills */}
+      <div className="person-type-filter">
+        <span className="ptype-filter-label">Người:</span>
+        {PEOPLE_TYPES.map(t => (
+          <button
+            key={t.code}
+            className={`ptype-pill ${personTypeFilter.has(t.code) ? 'active' : ''}`}
+            style={personTypeFilter.has(t.code) ? { borderColor: t.color, color: t.color, background: `${t.color}18` } : {}}
+            onClick={() => setPersonTypeFilter(prev => {
+              const next = new Set(prev);
+              if (next.has(t.code)) next.delete(t.code); else next.add(t.code);
+              return next;
+            })}
+          >
+            {t.icon} {t.name}
+          </button>
+        ))}
+        {personTypeFilter.size < ALL_TYPE_CODES.size && (
+          <button className="ptype-pill" onClick={() => setPersonTypeFilter(new Set(ALL_TYPE_CODES))}>Tất cả</button>
+        )}
       </div>
 
       {/* Summary pills */}

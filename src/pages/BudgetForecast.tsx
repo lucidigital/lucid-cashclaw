@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { CATEGORIES_CHI, CATEGORIES_THU, formatVND, formatFullVND, getStatusLabel } from '../data/mockData';
+import { CATEGORIES_CHI, CATEGORIES_THU, PEOPLE_TYPES, formatVND, formatFullVND, getStatusLabel } from '../data/mockData';
 import { type BudgetLine } from '../data/budgetData';
 import { useData } from '../data/DataContext';
 import PersonAutocomplete from '../components/PersonAutocomplete';
@@ -63,7 +63,7 @@ function parseAmount(raw: string): number {
 }
 
 export default function BudgetForecast() {
-  const { projects, transactions, phatSinhs, budgetLines, addBudgetLine, updateBudgetLine, deleteBudgetLine } = useData();
+  const { projects, transactions, phatSinhs, budgetLines, people, addBudgetLine, updateBudgetLine, deleteBudgetLine } = useData();
   const defaultProject = projects.find(p => p.status === 'in_progress');
   const [activeProject, setActiveProject] = useState(defaultProject?.id || '');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -86,6 +86,52 @@ export default function BudgetForecast() {
   const [formStatus, setFormStatus] = useState<BudgetLine['status']>('planned');
   const [formExpectedDate, setFormExpectedDate] = useState('');
   const [formNote, setFormNote] = useState('');
+
+  // ─── Person Type Filters ───────────────────────────
+  // Thu: default → Tổ chức + Leader
+  const [thuPersonTypeFilter, setThuPersonTypeFilter] = useState<Set<string>>(new Set(['org', 'leader']));
+  // Chi: default → Leader + Staff + Freelance + Supplier
+  const [chiPersonTypeFilter, setChiPersonTypeFilter] = useState<Set<string>>(new Set(['leader', 'staff', 'freelance', 'supplier']));
+  const ALL_PERSON_TYPES = new Set(PEOPLE_TYPES.map(t => t.code));
+
+  // Helper: check if person passes filter
+  function passesPersonFilter(personName: string | undefined, filter: Set<string>): boolean {
+    if (filter.size >= ALL_PERSON_TYPES.size) return true; // all selected
+    if (!personName) return true;                           // no person → always show
+    const personObj = people.find(p => p.name === personName);
+    if (!personObj) return true;                            // person not in DB → show
+    return filter.has(personObj.type);
+  }
+
+  // Helper: render person type filter pills
+  function renderPersonTypePills(
+    filter: Set<string>,
+    setFilter: React.Dispatch<React.SetStateAction<Set<string>>>,
+    defaultTypes: string[]
+  ) {
+    return (
+      <div className="person-type-filter">
+        <span className="ptype-filter-label">Người:</span>
+        {PEOPLE_TYPES.map(t => (
+          <button
+            key={t.code}
+            className={`ptype-pill ${filter.has(t.code) ? 'active' : ''}`}
+            style={filter.has(t.code) ? { borderColor: t.color, color: t.color, background: `${t.color}18` } : {}}
+            onClick={() => setFilter(prev => {
+              const next = new Set(prev);
+              if (next.has(t.code)) next.delete(t.code); else next.add(t.code);
+              return next;
+            })}
+          >
+            {t.icon} {t.name}
+          </button>
+        ))}
+        {filter.size < ALL_PERSON_TYPES.size && (
+          <button className="ptype-pill" onClick={() => setFilter(new Set(defaultTypes))}>Reset</button>
+        )}
+      </div>
+    );
+  }
 
   const project = projects.find(p => p.id === activeProject);
   const projectLines = budgetLines.filter(b => b.projectId === activeProject);
@@ -192,7 +238,9 @@ export default function BudgetForecast() {
   function renderThuTable(lines: BudgetLine[]) {
     // Auto-compute received per line from transactions
     // Priority 1: budgetLineId match, Priority 2: projectId + category + description match
-    const lineData = lines.map(line => {
+    const lineData = lines
+      .filter(line => passesPersonFilter(line.person, thuPersonTypeFilter))
+      .map(line => {
       const byLineId = transactions
         .filter(t => t.budgetLineId === line.id && t.type === 'thu')
         .reduce((s, t) => s + t.amount, 0);
@@ -227,6 +275,7 @@ export default function BudgetForecast() {
             ＋ Thêm
           </button>
         </div>
+        {renderPersonTypePills(thuPersonTypeFilter, setThuPersonTypeFilter, ['org', 'leader'])}
         <div className="budget-table">
           <div className="budget-thead budget-thu-row">
             <span>Danh mục</span><span>Mô tả</span>
@@ -316,8 +365,10 @@ export default function BudgetForecast() {
     const NON_PROJECT_CATS = ['vay_ung', 'chi_ung', 'thu_ung'];
 
     // Compute per-line data with auto-computed paid amounts
-    const lineData = lines.map(line => {
-      const cat = catMap[line.category];
+    const lineData = lines
+      .filter(line => passesPersonFilter(line.person, chiPersonTypeFilter))
+      .map(line => {
+        const cat = catMap[line.category];
       // PS categories = phát sinh, should NEVER be credited to a budget line
       const PS_CATS = ['ps_nhansu', 'ps_thu'];
       // Auto-compute "đã trả": prioritize budget_line_id match, fallback to person match
@@ -376,6 +427,7 @@ export default function BudgetForecast() {
             ＋ Thêm
           </button>
         </div>
+        {renderPersonTypePills(chiPersonTypeFilter, setChiPersonTypeFilter, ['leader', 'staff', 'freelance', 'supplier'])}
         <div className="budget-table budget-chi-table">
           <div className="budget-thead budget-chi-thead">
             <span>Người / Tổ chức</span>

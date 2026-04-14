@@ -107,6 +107,52 @@
   padding-left: calc(var(--space-lg) - 2px);
 }
 
+/* ─── Person Type Filter Bar ─────────────────────── */
+.person-type-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px var(--space-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-wrap: wrap;
+}
+
+.ptype-filter-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 2px;
+  white-space: nowrap;
+}
+
+.ptype-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.ptype-pill:hover {
+  border-color: var(--border-hover);
+  color: var(--text-secondary);
+}
+
+.ptype-pill.active {
+  font-weight: 700;
+}
+
 .txn-right {
   text-align: right;
 }
