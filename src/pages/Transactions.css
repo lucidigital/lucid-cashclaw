@@ -97,6 +97,16 @@
   background: var(--bg-card-hover);
 }
 
+.txn-row-clickable {
+  cursor: pointer;
+}
+
+.txn-row-clickable:hover {
+  background: var(--bg-card-hover);
+  border-left: 2px solid var(--brand-primary);
+  padding-left: calc(var(--space-lg) - 2px);
+}
+
 .txn-right {
   text-align: right;
 }

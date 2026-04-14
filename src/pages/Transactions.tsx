@@ -103,7 +103,12 @@ export default function Transactions() {
             const project = projects.find(p => p.id === t.projectId);
             const cat = catMap[t.category];
             return (
-              <div key={t.id} className="txn-row">
+              <div
+                key={t.id}
+                className="txn-row txn-row-clickable"
+                onClick={() => setEditTxn(t)}
+                title="Click để sửa"
+              >
                 <span className="txn-date">{new Date(t.date).toLocaleDateString('vi')}</span>
                 <span className={`txn-type ${t.type}`}>
                   {t.type === 'thu' ? '📥 Thu' : '📤 Chi'}
@@ -115,7 +120,7 @@ export default function Transactions() {
                 <span className={`txn-amount ${t.type === 'thu' ? 'text-income' : 'text-expense'}`}>
                   {t.type === 'thu' ? '+' : '−'}{formatVND(t.amount)}
                 </span>
-                <span className="txn-actions">
+                <span className="txn-actions" onClick={e => e.stopPropagation()}>
                   <button className="btn-icon" title="Sửa" onClick={() => setEditTxn(t)}>✏️</button>
                   <button className="btn-icon" title="Xóa" onClick={() => setDeleteTxnId(t.id)}>🗑️</button>
                 </span>
