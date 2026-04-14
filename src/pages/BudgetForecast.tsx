@@ -146,7 +146,10 @@ export default function BudgetForecast() {
     const actThu = thuLines.reduce((s, b) => s + b.actualAmount, 0);
     const estChi = chiLines.reduce((s, b) => s + b.estimatedAmount, 0);
     const actChi = chiLines.reduce((s, b) => s + b.actualAmount, 0);
-    return { thuLines, chiLines, estThu, actThu, estChi, actChi, estProfit: estThu - estChi, actProfit: actThu - actChi, variance: actChi - estChi };
+    // Split thu: core (non-ps_thu) vs phát sinh thu (ps_thu)
+    const estThuCore = thuLines.filter(b => b.category !== 'ps_thu').reduce((s, b) => s + b.estimatedAmount, 0);
+    const estThuPS   = thuLines.filter(b => b.category === 'ps_thu').reduce((s, b) => s + b.estimatedAmount, 0);
+    return { thuLines, chiLines, estThu, actThu, estChi, actChi, estThuCore, estThuPS, estProfit: estThu - estChi, actProfit: actThu - actChi, variance: actChi - estChi };
   })();
 
   const currentCategories = formType === 'thu' ? CATEGORIES_THU : CATEGORIES_CHI;
@@ -581,26 +584,36 @@ export default function BudgetForecast() {
                   <span className="bsc-label">Budget HĐ</span>
                   <span className="bsc-value">{formatVND(project.budget)}</span>
                   <div className="bsc-compare">
-                    <span className={`bsc-actual ${summary.estThu > project.budget ? 'text-danger' : 'text-income'}`}>
+                    <span className={`bsc-actual ${summary.estThuCore > project.budget ? 'text-danger' : 'text-income'}`}>
                       Dự toán thu: {formatVND(summary.estThu)}
                     </span>
-                    <span className={`bsc-pct ${summary.estThu > project.budget ? 'text-danger' : ''}`}>
+                    <span className={`bsc-pct ${summary.estThuCore > project.budget ? 'text-danger' : ''}`}>
                       {project.budget > 0 ? Math.round((summary.estThu / project.budget) * 100) : 0}%
                     </span>
                   </div>
                   <div className="bsc-bar">
                     <div
-                      className={`bsc-bar-fill ${summary.estThu > project.budget ? 'danger' : 'income'}`}
+                      className={`bsc-bar-fill ${summary.estThuCore > project.budget ? 'danger' : 'income'}`}
                       style={{ width: `${project.budget > 0 ? Math.min((summary.estThu / project.budget) * 100, 100) : 0}%` }}
                     />
                   </div>
-                  <span className="bsc-hint">
-                    {summary.estThu > project.budget
-                      ? `⚠️ Vượt ${formatVND(summary.estThu - project.budget)}`
-                      : summary.estThu === project.budget
-                        ? '✅ Khớp budget'
-                        : `📊 Còn ${formatVND(project.budget - summary.estThu)}`}
-                  </span>
+                  {/* Overage line: only shows when core thu exceeds budget */}
+                  {summary.estThuCore > project.budget && (
+                    <span className="bsc-hint" style={{ color: 'var(--color-expense)' }}>
+                      ⚠️ Vượt: {formatVND(summary.estThuCore - project.budget)}
+                    </span>
+                  )}
+                  {summary.estThuCore <= project.budget && (
+                    <span className="bsc-hint">
+                      {summary.estThuCore === project.budget ? '✅ Khớp budget' : `📊 Còn ${formatVND(project.budget - summary.estThuCore)}`}
+                    </span>
+                  )}
+                  {/* Phát sinh thu line: always shows if > 0 */}
+                  {summary.estThuPS > 0 && (
+                    <span className="bsc-hint" style={{ color: 'var(--color-warning)', marginTop: 2 }}>
+                      📋 Phát sinh thu: {formatVND(summary.estThuPS)}
+                    </span>
+                  )}
                 </div>
 
                 <div className="budget-sum-card animate-slide-up">
