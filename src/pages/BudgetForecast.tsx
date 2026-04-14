@@ -576,6 +576,33 @@ export default function BudgetForecast() {
             <>
               {/* Summary */}
               <div className="budget-summary stagger">
+                {/* ── Budget HĐ card ── */}
+                <div className="budget-sum-card animate-slide-up">
+                  <span className="bsc-label">Budget HĐ</span>
+                  <span className="bsc-value">{formatVND(project.budget)}</span>
+                  <div className="bsc-compare">
+                    <span className={`bsc-actual ${summary.estThu > project.budget ? 'text-danger' : 'text-income'}`}>
+                      Dự toán thu: {formatVND(summary.estThu)}
+                    </span>
+                    <span className={`bsc-pct ${summary.estThu > project.budget ? 'text-danger' : ''}`}>
+                      {project.budget > 0 ? Math.round((summary.estThu / project.budget) * 100) : 0}%
+                    </span>
+                  </div>
+                  <div className="bsc-bar">
+                    <div
+                      className={`bsc-bar-fill ${summary.estThu > project.budget ? 'danger' : 'income'}`}
+                      style={{ width: `${project.budget > 0 ? Math.min((summary.estThu / project.budget) * 100, 100) : 0}%` }}
+                    />
+                  </div>
+                  <span className="bsc-hint">
+                    {summary.estThu > project.budget
+                      ? `⚠️ Vượt ${formatVND(summary.estThu - project.budget)}`
+                      : summary.estThu === project.budget
+                        ? '✅ Khớp budget'
+                        : `📊 Còn ${formatVND(project.budget - summary.estThu)}`}
+                  </span>
+                </div>
+
                 <div className="budget-sum-card animate-slide-up">
                   <span className="bsc-label">Dự toán thu</span>
                   <span className="bsc-value">{formatVND(summary.estThu)}</span>
