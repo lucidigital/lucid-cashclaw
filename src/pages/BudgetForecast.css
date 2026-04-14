@@ -514,18 +514,32 @@
   font-size: 0.85rem;
 }
 
-/* ─── Chi Table (Person-based, 8 columns) ────────── */
+/* ─── Chi Table (Person-based, 8 columns + actions) ──── */
 .budget-chi-thead {
-  grid-template-columns: 140px 130px 1fr 100px 80px 110px 100px 100px !important;
+  grid-template-columns: 140px 130px 1fr 100px 80px 110px 100px 100px 60px !important;
 }
 
 .budget-chi-row {
-  grid-template-columns: 140px 130px 1fr 100px 80px 110px 100px 100px !important;
+  grid-template-columns: 140px 130px 1fr 100px 80px 110px 100px 100px 60px !important;
 }
 
-/* ─── Thu Table (7 columns: +date col) ──────────── */
+/* ─── Thu Table (7 columns + actions) ─────────────── */
 .budget-thu-row {
-  grid-template-columns: 160px 1fr 110px 100px 100px 100px 150px !important;
+  grid-template-columns: 160px 1fr 110px 100px 100px 100px 150px 60px !important;
+}
+
+/* ─── Actions Column ─────────────────────────── */
+.bt-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-end;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.budget-trow:hover .bt-actions {
+  opacity: 1;
 }
 
 .bt-date {

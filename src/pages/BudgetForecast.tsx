@@ -233,6 +233,7 @@ export default function BudgetForecast() {
             <span>Ngày dự kiến</span>
             <span className="bt-right">Dự toán</span><span className="bt-right">Đã thu</span>
             <span className="bt-right">Chênh lệch</span><span>Trạng thái</span>
+            <span></span>
           </div>
           {lineData.map(line => {
             const cat = catMap[line.category];
@@ -275,6 +276,10 @@ export default function BudgetForecast() {
                 </span>
                 <span className="bt-status" style={{ color: budgetStatusConfig[line.status]?.color, background: budgetStatusConfig[line.status]?.bg }}>
                   {budgetStatusConfig[line.status]?.label || line.status}
+                </span>
+                <span className="bt-actions" onClick={e => e.stopPropagation()}>
+                  <button className="btn-icon" title="Sửa" onClick={() => openEdit(line)}>✏️</button>
+                  <button className="btn-icon" title="Xóa" onClick={() => { deleteBudgetLine(line.id); }}>🗑️</button>
                 </span>
               </div>
             );
@@ -381,6 +386,7 @@ export default function BudgetForecast() {
             <span className="bt-right">Tổng HĐ</span>
             <span className="bt-right">Đã trả</span>
             <span className="bt-right">Còn nợ</span>
+            <span></span>
           </div>
           {lineData.map(d => (
             <div key={d.id} className={`budget-trow budget-chi-row ${d.outstanding <= 0 ? 'settled' : ''}`} onDoubleClick={() => openEdit(d)} title="Double-click để sửa">
@@ -400,6 +406,10 @@ export default function BudgetForecast() {
               </span>
               <span className={`bt-amount bt-right ${d.outstanding > 0 ? 'text-danger' : d.outstanding === 0 ? 'text-income' : ''}`} style={{ fontWeight: 700 }}>
                 {d.outstanding > 0 ? formatVND(d.outstanding) : d.outstanding === 0 ? '✅ 0' : formatVND(d.outstanding)}
+              </span>
+              <span className="bt-actions" onClick={e => e.stopPropagation()}>
+                <button className="btn-icon" title="Sửa" onClick={() => openEdit(d)}>✏️</button>
+                <button className="btn-icon" title="Xóa" onClick={() => { deleteBudgetLine(d.id); }}>🗑️</button>
               </span>
             </div>
           ))}
