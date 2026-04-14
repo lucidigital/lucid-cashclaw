@@ -27,10 +27,17 @@ export default function PersonAutocomplete({
   const { people: dbPeople } = useData();
   const people = dbPeople.length > 0 ? dbPeople : MOCK_PEOPLE;
 
-  // Internal type filter — initialized from prop
+  // Internal type filter — initialized from prop, resets when prop changes (e.g. THU↔CHI switch)
   const [typeFilter, setTypeFilter] = useState<Set<string>>(
     () => new Set(defaultFilterTypes ?? ALL_TYPE_CODES)
   );
+
+  // Sync when parent changes defaultFilterTypes (array reference changes each render → use JSON key)
+  const filterKey = JSON.stringify(defaultFilterTypes ?? ALL_TYPE_CODES);
+  useEffect(() => {
+    setTypeFilter(new Set(defaultFilterTypes ?? ALL_TYPE_CODES));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey]);
 
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(false);
