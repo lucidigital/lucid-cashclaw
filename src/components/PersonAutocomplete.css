@@ -201,3 +201,37 @@
   font-size: 0.82rem;
   text-align: center;
 }
+
+/* ── Type Filter Pills (below input) ────────────────── */
+.pac-type-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.pac-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-muted, #888);
+  font-family: var(--font-family, Inter, sans-serif);
+  font-size: 0.68rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.pac-type-pill:hover {
+  border-color: rgba(255,255,255,0.25);
+  color: var(--text-secondary, #ccc);
+}
+
+.pac-type-pill.active {
+  font-weight: 700;
+}

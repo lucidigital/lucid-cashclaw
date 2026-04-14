@@ -675,6 +675,7 @@ export default function BudgetForecast() {
                     onChange={setFormPerson}
                     placeholder="VD: Trung Ca, Studio XYZ..."
                     hint="Tên chính xác để match với Transactions"
+                    defaultFilterTypes={['leader', 'staff', 'freelance', 'supplier']}
                   />
                 </div>
               )}

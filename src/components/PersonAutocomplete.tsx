@@ -6,6 +6,7 @@ import { MOCK_PEOPLE, PEOPLE_TYPES } from '../data/mockData';
 import './PersonAutocomplete.css';
 
 const TYPE_MAP = Object.fromEntries(PEOPLE_TYPES.map(t => [t.code, t]));
+const ALL_TYPE_CODES = PEOPLE_TYPES.map(t => t.code);
 
 interface Props {
   value: string;
@@ -16,23 +17,32 @@ interface Props {
   hint?: string;
   autoFocus?: boolean;
   id?: string;
+  defaultFilterTypes?: string[]; // filter suggestions by person type
 }
 
 export default function PersonAutocomplete({
   value, onChange, placeholder, label, required, hint, autoFocus, id,
+  defaultFilterTypes,
 }: Props) {
   const { people: dbPeople } = useData();
   const people = dbPeople.length > 0 ? dbPeople : MOCK_PEOPLE;
+
+  // Internal type filter — initialized from prop
+  const [typeFilter, setTypeFilter] = useState<Set<string>>(
+    () => new Set(defaultFilterTypes ?? ALL_TYPE_CODES)
+  );
 
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Filter by typed value
+  // Filter by typed value AND active type filter
+  const isAllTypes = typeFilter.size >= ALL_TYPE_CODES.length;
+  const byType = isAllTypes ? people : people.filter(p => typeFilter.has(p.type));
   const filtered = value.trim().length === 0
-    ? people.slice(0, 8)                           // show recent 8 when empty
-    : people.filter(p =>
+    ? byType.slice(0, 8)
+    : byType.filter(p =>
         p.name.toLowerCase().includes(value.toLowerCase()) ||
         p.role?.toLowerCase().includes(value.toLowerCase())
       ).slice(0, 8);
@@ -131,6 +141,28 @@ export default function PersonAutocomplete({
           )}
         </div>
       )}
+
+      {/* Type filter pills */}
+      <div className="pac-type-pills">
+        {PEOPLE_TYPES.map(t => (
+          <button
+            key={t.code}
+            type="button"
+            className={`pac-type-pill ${typeFilter.has(t.code) ? 'active' : ''}`}
+            style={typeFilter.has(t.code) ? { borderColor: t.color, color: t.color, background: `${t.color}15` } : {}}
+            onMouseDown={e => {
+              e.preventDefault();
+              setTypeFilter(prev => {
+                const next = new Set(prev);
+                if (next.has(t.code)) next.delete(t.code); else next.add(t.code);
+                return next;
+              });
+            }}
+          >
+            {t.icon} {t.name}
+          </button>
+        ))}
+      </div>
 
       {hint && <span className="form-hint">{hint}</span>}
     </div>
