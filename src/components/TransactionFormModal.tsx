@@ -76,10 +76,22 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
   );
 
   const parseAmount = (val: string): number => {
-    const cleaned = val.replace(/[^\d.]/g, '');
-    const num = parseFloat(cleaned);
-    if (isNaN(num)) return 0;
-    return num * 1_000_000;
+    let s = val.trim().toLowerCase();
+    let multiplier = 1_000_000; // default triệu
+    let suffix = '';
+    if (s.endsWith('tỷ'))      { multiplier = 1_000_000_000; suffix = 'tỷ'; }
+    else if (s.endsWith('ty')) { multiplier = 1_000_000_000; suffix = 'ty'; }
+    else if (s.endsWith('tr')) { multiplier = 1_000_000;     suffix = 'tr'; }
+    else if (s.endsWith('k'))  { multiplier = 1_000;         suffix = 'k';  }
+    if (suffix) s = s.slice(0, s.length - suffix.length).trim();
+
+    if (/^\d+[,.]\d{1,2}$/.test(s)) {
+      s = s.replace(',', '.');
+    } else {
+      s = s.replace(/[,.]/g, '');
+    }
+    const num = parseFloat(s);
+    return isNaN(num) ? 0 : num * multiplier;
   };
 
   const handleSave = () => {

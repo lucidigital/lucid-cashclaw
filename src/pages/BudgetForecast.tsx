@@ -40,13 +40,26 @@ const budgetStatusConfig: Record<string, { label: string; color: string; bg: str
 };
 
 function parseAmount(raw: string): number {
-  const s = raw.trim().toLowerCase().replace(/,/g, '');
-  if (s.endsWith('ty') || s.endsWith('tỷ')) return parseFloat(s) * 1_000_000_000;
-  if (s.endsWith('tr')) return parseFloat(s) * 1_000_000;
-  if (s.endsWith('k')) return parseFloat(s) * 1_000;
-  // If plain number (no suffix), treat as triệu (matching the UI label)
-  const num = parseFloat(s.replace(/\./g, ''));
-  return isNaN(num) ? 0 : num * 1_000_000;
+  let s = raw.trim().toLowerCase();
+
+  let multiplier = 1_000_000; // default = triệu (matching UI label)
+  let suffix = '';
+  if (s.endsWith('tỷ'))      { multiplier = 1_000_000_000; suffix = 'tỷ'; }
+  else if (s.endsWith('ty')) { multiplier = 1_000_000_000; suffix = 'ty'; }
+  else if (s.endsWith('tr')) { multiplier = 1_000_000;     suffix = 'tr'; }
+  else if (s.endsWith('k'))  { multiplier = 1_000;         suffix = 'k';  }
+  if (suffix) s = s.slice(0, s.length - suffix.length).trim();
+
+  // "32,6" or "32.6" (1-2 digits after sep) → decimal
+  // "1,000" (3 digits after sep) → thousands
+  if (/^\d+[,.]\d{1,2}$/.test(s)) {
+    s = s.replace(',', '.');
+  } else {
+    s = s.replace(/[,.]/g, '');
+  }
+
+  const num = parseFloat(s);
+  return isNaN(num) ? 0 : num * multiplier;
 }
 
 export default function BudgetForecast() {
