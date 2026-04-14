@@ -35,7 +35,10 @@ export default function Modal({ open, onClose, title, icon, wide, children, foot
   if (!open) return null;
 
   return createPortal(
-    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div
+      className="modal-overlay"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <div className={`modal-panel ${wide ? 'wide' : ''}`}>
         <div className="modal-header">
           <h2>{icon && <span>{icon}</span>} {title}</h2>

@@ -570,8 +570,8 @@ export default function BudgetForecast() {
 
       {/* ── Budget Line Modal ────────────────────── */}
       {showModal && createPortal(
-        <div className="modal-overlay" onClick={() => { setShowModal(false); resetForm(); }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-overlay" onMouseDown={() => { setShowModal(false); resetForm(); }}>
+          <div className="modal-content" onMouseDown={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingId ? '✏️ Sửa dự toán' : '＋ Thêm dự toán'}</h2>
               <button className="modal-close" onClick={() => { setShowModal(false); resetForm(); }}>✕</button>
