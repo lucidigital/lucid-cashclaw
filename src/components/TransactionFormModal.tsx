@@ -27,8 +27,8 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [salaryMonth, setSalaryMonth] = useState('');
 
-  // Find salary project (isInternal)
-  const salaryProject = projects.find(p => p.isInternal);
+  // Find salary project — by isInternal flag OR by name fallback
+  const salaryProject = projects.find(p => p.isInternal || p.name === 'Lương Lucid');
   const isInternalProject = !!salaryProject && projectId === salaryProject.id;
 
   const categories = type === 'thu' ? CATEGORIES_THU : CATEGORIES_CHI;

@@ -115,7 +115,7 @@ export default function StaffSalary() {
 
   // Auto-linked paid from transactions using salaryMonth field
   const txnPaidMap = useMemo(() => {
-    const salaryProj = projects.find(p => p.isInternal);
+    const salaryProj = projects.find(p => p.isInternal || p.name === 'Lương Lucid');
     if (!salaryProj) return {} as Record<string, number>;
     const map: Record<string, number> = {};
     staffPeople.forEach(person => {
