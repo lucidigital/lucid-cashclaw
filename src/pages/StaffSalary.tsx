@@ -48,17 +48,7 @@ function shiftMonth(m: string, delta: number) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// ─── Transaction month-match ────────────────────────────────
-function matchesMonth(description: string, month: string): boolean {
-  const [, mo] = month.split('-');
-  const n = parseInt(mo);
-  const d = description.toLowerCase();
-  return (
-    new RegExp(`\\bt\\s*0?${n}\\b`).test(d) ||
-    new RegExp(`tháng\\s+0?${n}\\b`).test(d) ||
-    new RegExp(`0?${n}\\s*/\\s*20\\d{2}`).test(d)
-  );
-}
+
 
 // ─── Draft type ────────────────────────────────────────────
 type RowDraft = {
