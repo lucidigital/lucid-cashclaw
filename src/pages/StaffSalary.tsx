@@ -92,7 +92,7 @@ function autoStatus(paidDong: number, netDong: number): StaffSalary['status'] {
 
 // ─── Component ─────────────────────────────────────────────
 export default function StaffSalary() {
-  const { people, staffSalaries, transactions, addStaffSalary, updateStaffSalary, deleteStaffSalary } = useData();
+  const { people, staffSalaries, transactions, projects, addStaffSalary, updateStaffSalary, deleteStaffSalary } = useData();
 
   const [month, setMonth]     = useState(getCurrentMonth());
   const [drafts, setDrafts]   = useState<Record<string, RowDraft>>({});
@@ -113,22 +113,25 @@ export default function StaffSalary() {
     return map;
   }, [staffSalaries, month]);
 
-  // Auto-linked paid amounts from transactions (in đồng)
+  // Auto-linked paid from transactions using salaryMonth field
   const txnPaidMap = useMemo(() => {
+    const salaryProj = projects.find(p => p.isInternal);
+    if (!salaryProj) return {} as Record<string, number>;
     const map: Record<string, number> = {};
     staffPeople.forEach(person => {
       const paid = transactions
         .filter(t =>
           t.type === 'chi' &&
-          t.category === 'nhansu' &&
+          t.category === 'luong' &&
+          t.projectId === salaryProj.id &&
           t.person === person.name &&
-          matchesMonth(t.description, month)
+          t.salaryMonth === month
         )
         .reduce((s, t) => s + t.amount, 0);
       if (paid > 0) map[person.name] = paid;
     });
     return map;
-  }, [transactions, staffPeople, month]);
+  }, [transactions, projects, staffPeople, month]);
 
   const roster = useMemo(
     () => staffPeople.map(person => ({ person, record: monthRecords[person.name] || null })),
@@ -363,36 +366,27 @@ export default function StaffSalary() {
                 </strong>
               </span>
 
-              {/* Đã trả */}
+              {/* Đã trả — always from transactions, read-only */}
               <span className="rt-money">
                 {isAutoLinked ? (
                   <div className="auto-paid">
                     <span className="auto-paid-val">{fmTr(txnPaid)}</span>
-                    <span className="auto-badge" title="Tự động từ giao dịch">🔗</span>
+                    <span className="auto-badge" title="Tự động từ giao dịch Lương Lucid">🔗</span>
                   </div>
                 ) : (
-                  <input className="ri ri-paid" type="number" step="0.5" placeholder="0"
-                    value={row.paidAmount} disabled={busy}
-                    onChange={e => patch(person.id, person, record, 'paidAmount', e.target.value)} />
+                  <div className="no-txn">
+                    <span>—</span>
+                    <span className="no-txn-hint">Chưa có GD</span>
+                  </div>
                 )}
               </span>
 
-              {/* Status */}
+              {/* Status — always computed, read-only */}
               <span className="rt-status">
-                {isAutoLinked ? (
-                  <span className="status-auto"
-                    style={{ color: st.color, background: `${st.color}18`, borderColor: `${st.color}55` }}>
-                    {st.icon} {st.label}
-                  </span>
-                ) : (
-                  <select className="status-sel" value={row.status} disabled={busy}
-                    style={{ color: st.color, borderColor: `${st.color}55` }}
-                    onChange={e => patch(person.id, person, record, 'status', e.target.value as StaffSalary['status'])}>
-                    {(Object.entries(STATUS_MAP) as [StaffSalary['status'], typeof STATUS_MAP[keyof typeof STATUS_MAP]][]).map(([code, cfg]) => (
-                      <option key={code} value={code}>{cfg.icon} {cfg.label}</option>
-                    ))}
-                  </select>
-                )}
+                <span className="status-auto"
+                  style={{ color: st.color, background: `${st.color}18`, borderColor: `${st.color}55` }}>
+                  {st.icon} {st.label}
+                </span>
               </span>
 
               {/* Actions */}

@@ -33,11 +33,9 @@ export function rowToProject(row: Record<string, any>): Project {
     type: row.type,
     budget: row.budget,
     status: row.status,
+    isInternal: row.is_internal || false,
     createdAt: row.created_at?.split('T')[0] || '',
-    timeline: row.timeline_start ? {
-      start: row.timeline_start,
-      end: row.timeline_end || '',
-    } : undefined,
+    timeline: row.timeline_start ? { start: row.timeline_start, end: row.timeline_end || '' } : undefined,
     note: row.note || undefined,
   };
 }
@@ -52,6 +50,7 @@ export function rowToTransaction(row: Record<string, any>): Transaction {
     category: row.category,
     person: row.person || undefined,
     budgetLineId: row.budget_line_id || undefined,
+    salaryMonth: row.salary_month || undefined,
     description: row.description,
     date: row.date,
     createdAt: row.created_at?.split('T')[0] || '',
@@ -142,21 +141,20 @@ export function rowToBudgetLine(row: Record<string, any>): BudgetLine {
 // ─── TypeScript → Row (for insert/update) ───────────
 
 export function projectToRow(data: Partial<Project>) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const row: Record<string, any> = {};
-  if (data.name !== undefined) row.name = data.name;
-  if (data.client !== undefined) row.client = data.client;
-  if (data.type !== undefined) row.type = data.type;
-  if (data.budget !== undefined) row.budget = data.budget;
-  if (data.status !== undefined) row.status = data.status;
+  if (data.name       !== undefined) row.name         = data.name;
+  if (data.client     !== undefined) row.client       = data.client;
+  if (data.type       !== undefined) row.type         = data.type;
+  if (data.budget     !== undefined) row.budget       = data.budget;
+  if (data.status     !== undefined) row.status       = data.status;
+  if (data.isInternal !== undefined) row.is_internal  = data.isInternal;
   if (data.timeline?.start) row.timeline_start = data.timeline.start;
-  if (data.timeline?.end) row.timeline_end = data.timeline.end;
-  if (data.note !== undefined) row.note = data.note;
+  if (data.timeline?.end)   row.timeline_end   = data.timeline.end;
+  if (data.note       !== undefined) row.note         = data.note;
   return row;
 }
 
 export function transactionToRow(data: Partial<Transaction>) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const row: Record<string, any> = {};
   if (data.projectId    !== undefined) row.project_id     = data.projectId || null;
   if (data.type         !== undefined) row.type           = data.type;
@@ -164,6 +162,7 @@ export function transactionToRow(data: Partial<Transaction>) {
   if (data.category     !== undefined) row.category       = data.category;
   if (data.person       !== undefined) row.person         = data.person;
   if (data.budgetLineId !== undefined) row.budget_line_id = data.budgetLineId || null;
+  if (data.salaryMonth  !== undefined) row.salary_month   = data.salaryMonth || null;
   if (data.description  !== undefined) row.description    = data.description;
   if (data.date         !== undefined) row.date           = data.date;
   return row;

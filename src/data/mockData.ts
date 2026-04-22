@@ -9,6 +9,7 @@ export interface Project {
   type: string;
   budget: number;
   status: 'in_progress' | 'review' | 'completed' | 'archived';
+  isInternal?: boolean;   // true = project nội bộ (Lương Lucid), ẩn khỏi danh sách client
   createdAt: string;
   timeline?: { start: string; end: string };
   note?: string;
@@ -17,11 +18,12 @@ export interface Project {
 export interface Transaction {
   id: number;
   projectId: string;
-  type: 'thu' | 'chi';           // Only 2 types now
+  type: 'thu' | 'chi';
   amount: number;
-  category: string;               // See CATEGORIES_THU / CATEGORIES_CHI
+  category: string;
   person?: string;
-  budgetLineId?: string;          // Link to budget_lines.id (null = overflow)
+  budgetLineId?: string;
+  salaryMonth?: string;   // 'YYYY-MM' — chỉ có khi trả lương (project isInternal)
   description: string;
   date: string;
   createdAt: string;
@@ -112,6 +114,7 @@ export const CATEGORIES_THU = [
 ];
 
 export const CATEGORIES_CHI = [
+  { code: 'luong',     icon: '💰', name: 'Chi lương' },
   { code: 'nhansu',    icon: '👥', name: 'Chi nhân sự' },
   { code: 'freelance', icon: '👤', name: 'Chi freelance' },
   { code: 'ps_nhansu', icon: '⚠️', name: 'Chi nhân sự phát sinh' },

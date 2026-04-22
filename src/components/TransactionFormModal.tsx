@@ -25,6 +25,11 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
   const [budgetLineId, setBudgetLineId] = useState<string | undefined>(undefined);
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [salaryMonth, setSalaryMonth] = useState('');
+
+  // Find salary project (isInternal)
+  const salaryProject = projects.find(p => p.isInternal);
+  const isInternalProject = !!salaryProject && projectId === salaryProject.id;
 
   const categories = type === 'thu' ? CATEGORIES_THU : CATEGORIES_CHI;
 
@@ -39,6 +44,7 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
       setBudgetLineId(editTransaction.budgetLineId);
       setDescription(editTransaction.description);
       setDate(editTransaction.date);
+      setSalaryMonth(editTransaction.salaryMonth || '');
     } else {
       setType('chi');
       setAmount('');
@@ -48,6 +54,7 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
       setBudgetLineId(undefined);
       setDescription('');
       setDate(new Date().toISOString().split('T')[0]);
+      setSalaryMonth('');
     }
   }, [editTransaction, defaultProjectId, open]);
 
@@ -105,6 +112,7 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
       projectId,
       person: person.trim() || undefined,
       budgetLineId,
+      salaryMonth: isInternalProject && salaryMonth ? salaryMonth : undefined,
       description: description.trim(),
       date,
     };
@@ -169,9 +177,18 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
       <div className="form-row">
         <div className="form-group">
           <label>Project</label>
-          <select className="input" value={projectId} onChange={e => setProjectId(e.target.value)}>
+          <select className="input" value={projectId} onChange={e => {
+            setProjectId(e.target.value);
+            // Auto-set category when salary project selected
+            const proj = projects.find(p => p.id === e.target.value);
+            if (proj?.isInternal) setCategory('luong');
+          }}>
             <option value="">— Không thuộc project —</option>
-            {projects.filter(p => p.status !== 'archived').map(p => (
+            {/* Internal salary project shown first */}
+            {projects.filter(p => p.isInternal).map(p => (
+              <option key={p.id} value={p.id}>💰 {p.name}</option>
+            ))}
+            {projects.filter(p => !p.isInternal && p.status !== 'archived').map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
           </select>
@@ -186,6 +203,25 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
           </select>
         </div>
       </div>
+
+      {/* Tháng lương — chỉ hiện khi project Lương Lucid */}
+      {isInternalProject && (
+        <div className="form-group salary-month-field">
+          <label>📅 Tháng lương <span className="required">*</span></label>
+          <select className="input" value={salaryMonth} onChange={e => setSalaryMonth(e.target.value)}>
+            <option value="">— Chọn tháng —</option>
+            {Array.from({ length: 12 }, (_, i) => {
+              const d = new Date();
+              d.setMonth(d.getMonth() - 3 + i);
+              const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+              return <option key={val} value={val}>Tháng {d.getMonth() + 1} / {d.getFullYear()}</option>;
+            })}
+          </select>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+            Tháng lương thực tế (có thể trả sớm/muộn hơn ngày giao dịch)
+          </span>
+        </div>
+      )}
 
       {/* Person + Date */}
       <div className="form-row">
