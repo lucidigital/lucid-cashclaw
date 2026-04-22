@@ -1,7 +1,7 @@
 // ─── Lucid CashClaw — Data Mappers ──────────────────
 // Convert between camelCase (TypeScript) ↔ snake_case (PostgreSQL)
 
-import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, ManualDebt, Person } from './mockData';
+import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, ManualDebt, Person, StaffSalary } from './mockData';
 import type { BudgetLine } from './budgetData';
 
 // ─── Generic snake_case → camelCase ─────────────────
@@ -210,6 +210,7 @@ export function rowToPerson(row: Record<string, any>): Person {
     phone: row.phone || undefined,
     taxCode: row.tax_code || undefined,
     bankInfo: row.bank_info || undefined,
+    baseSalary: row.base_salary || undefined,
     note: row.note || undefined,
     createdAt: row.created_at?.split('T')[0] || '',
   };
@@ -217,12 +218,50 @@ export function rowToPerson(row: Record<string, any>): Person {
 
 export function personToRow(data: Partial<Person>) {
   const row: Record<string, unknown> = {};
-  if (data.name     !== undefined) row.name      = data.name;
-  if (data.type     !== undefined) row.type      = data.type;
-  if (data.role     !== undefined) row.role      = data.role;
-  if (data.phone    !== undefined) row.phone     = data.phone;
-  if (data.taxCode  !== undefined) row.tax_code  = data.taxCode;
-  if (data.bankInfo !== undefined) row.bank_info = data.bankInfo;
-  if (data.note     !== undefined) row.note      = data.note;
+  if (data.name       !== undefined) row.name        = data.name;
+  if (data.type       !== undefined) row.type        = data.type;
+  if (data.role       !== undefined) row.role        = data.role;
+  if (data.phone      !== undefined) row.phone       = data.phone;
+  if (data.taxCode    !== undefined) row.tax_code    = data.taxCode;
+  if (data.bankInfo   !== undefined) row.bank_info   = data.bankInfo;
+  if (data.baseSalary !== undefined) row.base_salary = data.baseSalary;
+  if (data.note       !== undefined) row.note        = data.note;
+  return row;
+}
+
+// ─── StaffSalary Mappers ─────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function rowToStaffSalary(row: Record<string, any>): StaffSalary {
+  const base = row.base_salary ?? 0;
+  const bonus = row.bonus ?? 0;
+  const deduction = row.deduction ?? 0;
+  return {
+    id: row.id,
+    personName: row.person_name,
+    month: row.month,
+    baseSalary: base,
+    bonus,
+    deduction,
+    netSalary: row.net_salary ?? (base + bonus - deduction),
+    status: row.status ?? 'pending',
+    paidAmount: row.paid_amount ?? 0,
+    paidDate: row.paid_date || undefined,
+    note: row.note || undefined,
+    createdAt: row.created_at?.split('T')[0] || '',
+  };
+}
+
+export function staffSalaryToRow(data: Partial<StaffSalary>) {
+  const row: Record<string, unknown> = {};
+  if (data.personName  !== undefined) row.person_name  = data.personName;
+  if (data.month       !== undefined) row.month        = data.month;
+  if (data.baseSalary  !== undefined) row.base_salary  = data.baseSalary;
+  if (data.bonus       !== undefined) row.bonus        = data.bonus;
+  if (data.deduction   !== undefined) row.deduction    = data.deduction;
+  if (data.netSalary   !== undefined) row.net_salary   = data.netSalary;
+  if (data.status      !== undefined) row.status       = data.status;
+  if (data.paidAmount  !== undefined) row.paid_amount  = data.paidAmount;
+  if (data.paidDate    !== undefined) row.paid_date    = data.paidDate || null;
+  if (data.note        !== undefined) row.note         = data.note || null;
   return row;
 }

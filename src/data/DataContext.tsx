@@ -8,8 +8,9 @@ import {
   rowToProject, rowToTransaction, rowToMilestone, rowToPhatSinh,
   rowToDebtEntry, rowToBudgetLine, rowToPerson, rowToManualDebt, manualDebtToRow,
   projectToRow, transactionToRow, milestoneToRow, phatSinhToRow, budgetLineToRow, personToRow,
+  rowToStaffSalary, staffSalaryToRow,
 } from './mappers';
-import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, ManualDebt, Person } from './mockData';
+import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, ManualDebt, Person, StaffSalary } from './mockData';
 import type { BudgetLine } from './budgetData';
 
 // ─── Context Type (unchanged from Phase A) ──────────
@@ -62,6 +63,12 @@ interface DataContextType {
   addManualDebt: (d: Omit<ManualDebt, 'id' | 'createdAt'>) => Promise<ManualDebt>;
   updateManualDebt: (id: string, updates: Partial<ManualDebt>) => Promise<void>;
   deleteManualDebt: (id: string) => Promise<void>;
+
+  // Staff Salaries
+  staffSalaries: StaffSalary[];
+  addStaffSalary: (s: Omit<StaffSalary, 'id' | 'createdAt'>) => Promise<StaffSalary>;
+  updateStaffSalary: (id: string, updates: Partial<StaffSalary>) => Promise<void>;
+  deleteStaffSalary: (id: string) => Promise<void>;
 
   // Helpers (computed from state — same as Phase A)
   getProjectTotals: (projectId: string) => {
@@ -134,6 +141,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [people, setPeople] = useState<Person[]>([]);
   const [manualDebts, setManualDebts] = useState<ManualDebt[]>([]);
+  const [staffSalaries, setStaffSalaries] = useState<StaffSalary[]>([]);
 
   // ─── Initial fetch ────────────────────────────────
   useEffect(() => {
@@ -141,7 +149,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       try {
-        const [pRes, tRes, mRes, psRes, dRes, blRes, peRes, mdRes] = await Promise.all([
+        const [pRes, tRes, mRes, psRes, dRes, blRes, peRes, mdRes, ssRes] = await Promise.all([
           supabase.from('projects').select('*').order('created_at', { ascending: false }),
           supabase.from('transactions').select('*').order('date', { ascending: false }),
           supabase.from('milestones').select('*').order('dot'),
@@ -150,6 +158,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           supabase.from('budget_lines').select('*'),
           supabase.from('people').select('*').order('name'),
           supabase.from('manual_debts').select('*').order('date', { ascending: false }),
+          supabase.from('staff_salaries').select('*').order('month', { ascending: false }),
         ]);
 
         if (pRes.error) throw pRes.error;
@@ -161,6 +170,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         // people/manual_debts tables may not exist yet — soft fail
         if (peRes.error) console.warn('people table not found, skipping:', peRes.error.message);
         if (mdRes.error) console.warn('manual_debts table not found, skipping:', mdRes.error.message);
+        if (ssRes.error) console.warn('staff_salaries table not found, skipping:', ssRes.error.message);
 
         setProjects((pRes.data || []).map(rowToProject));
         setTransactions((tRes.data || []).map(rowToTransaction));
@@ -170,6 +180,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setBudgetLines((blRes.data || []).map(rowToBudgetLine));
         setPeople((peRes.data || []).map(rowToPerson));
         setManualDebts((mdRes.data || []).map(rowToManualDebt));
+        setStaffSalaries((ssRes.data || []).map(rowToStaffSalary));
       } catch (err) {
         console.error('Failed to fetch data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -288,6 +299,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'manual_debts' }, (payload) => {
         setManualDebts(prev => prev.filter(md => md.id !== payload.old.id));
+      })
+
+      // ── Staff Salaries ────────────────────────────────
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'staff_salaries' }, (payload) => {
+        const newSs = rowToStaffSalary(payload.new);
+        setStaffSalaries(prev => {
+          if (prev.some(ss => ss.id === newSs.id)) return prev;
+          return [newSs, ...prev];
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'staff_salaries' }, (payload) => {
+        setStaffSalaries(prev => prev.map(ss => ss.id === payload.new.id ? rowToStaffSalary(payload.new) : ss));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'staff_salaries' }, (payload) => {
+        setStaffSalaries(prev => prev.filter(ss => ss.id !== payload.old.id));
       })
 
       .subscribe((status) => {
@@ -745,10 +771,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setManualDebts(prev => prev.filter(md => md.id !== id));
   }, []);
 
+  // ─── Staff Salary CRUD ─────────────────────────────
+  const addStaffSalary = useCallback(async (data: Omit<StaffSalary, 'id' | 'createdAt'>): Promise<StaffSalary> => {
+    const row = staffSalaryToRow(data);
+    const { data: rows, error: err } = await supabase
+      .from('staff_salaries').insert(row).select().single();
+    if (err) throw err;
+    const newSs = rowToStaffSalary(rows);
+    setStaffSalaries(prev => [newSs, ...prev]);
+    return newSs;
+  }, []);
+
+  const updateStaffSalary = useCallback(async (id: string, updates: Partial<StaffSalary>) => {
+    const row = staffSalaryToRow(updates);
+    const { error: err } = await supabase
+      .from('staff_salaries').update(row).eq('id', id);
+    if (err) throw err;
+    setStaffSalaries(prev => prev.map(ss => ss.id === id ? { ...ss, ...updates } : ss));
+  }, []);
+
+  const deleteStaffSalary = useCallback(async (id: string) => {
+    const { error: err } = await supabase
+      .from('staff_salaries').delete().eq('id', id);
+    if (err) throw err;
+    setStaffSalaries(prev => prev.filter(ss => ss.id !== id));
+  }, []);
+
   return (
     <DataContext.Provider value={{
       projects, transactions, milestones, phatSinhs, debtEntries, budgetLines,
-      people, manualDebts,
+      people, manualDebts, staffSalaries,
       loading, error,
       addProject, updateProject, deleteProject,
       addTransaction, updateTransaction, deleteTransaction,
@@ -757,6 +809,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addBudgetLine, updateBudgetLine, deleteBudgetLine,
       addPerson, updatePerson, deletePerson,
       addManualDebt, updateManualDebt, deleteManualDebt,
+      addStaffSalary, updateStaffSalary, deleteStaffSalary,
       getProjectTotals, getDebtSummary, getAdvanceSummary,
       getReceivablesSummary, getBudgetSummary, getPayableSummary,
     }}>

@@ -75,6 +75,22 @@ export interface Person {
   phone?: string;
   taxCode?: string;
   bankInfo?: string;
+  baseSalary?: number;   // Lương cơ bản mặc định (dùng để auto-fill bảng lương)
+  note?: string;
+  createdAt: string;
+}
+
+export interface StaffSalary {
+  id: string;
+  personName: string;       // Tên staff (link theo name)
+  month: string;            // Format: 'YYYY-MM'
+  baseSalary: number;       // Lương cơ bản
+  bonus: number;            // Thưởng / phụ cấp
+  deduction: number;        // Khấu trừ / tạm ứng trừ vào lương
+  netSalary: number;        // = baseSalary + bonus - deduction
+  status: 'pending' | 'paid' | 'partial';
+  paidAmount: number;       // Đã trả thực tế
+  paidDate?: string;        // Ngày chi
   note?: string;
   createdAt: string;
 }

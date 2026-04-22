@@ -5,6 +5,42 @@
   gap: var(--space-lg);
 }
 
+/* ── Tab Navigation ───────────────────────────────────── */
+.people-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  width: fit-content;
+}
+
+.ptab-btn {
+  padding: 8px 22px;
+  border: none;
+  border-radius: calc(var(--radius-lg) - 4px);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.ptab-btn:hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ptab-btn.active {
+  background: var(--brand-primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.4);
+}
+
 /* ── Toolbar ──────────────────────────────────────── */
 .people-toolbar {
   display: flex;
