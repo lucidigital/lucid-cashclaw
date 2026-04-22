@@ -293,7 +293,49 @@
 
 .row-err { font-size: 0.9rem; cursor: help; }
 
-/* ── Roster Footer ────────────────────────────────── */
+.roster-thead > span em {
+  font-style: normal;
+  font-size: 0.65rem;
+  opacity: 0.6;
+  display: block;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* ── Auto-linked paid display ─────────────────────── */
+.auto-paid {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(0, 184, 148, 0.08);
+  border: 1px solid rgba(0, 184, 148, 0.25);
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.auto-paid-val {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #00b894;
+}
+.auto-badge {
+  font-size: 0.75rem;
+  cursor: help;
+}
+
+/* ── Auto status badge (read-only) ───────────────── */
+.status-auto {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .roster-footer {
   display: flex;
   align-items: center;
