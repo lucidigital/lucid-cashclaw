@@ -13,6 +13,8 @@ export default function Projects() {
   const [showModal, setShowModal] = useState(false);
 
   const filtered = projects.filter(p => {
+    // Luôn ẩn internal projects (Lương Lucid, etc.)
+    if (p.isInternal) return false;
     // 'all' tab hides archived by default
     if (filter === 'all' && p.status === 'archived') return false;
     // specific tab must match
