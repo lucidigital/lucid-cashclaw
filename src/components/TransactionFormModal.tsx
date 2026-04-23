@@ -103,7 +103,14 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
 
   const handleSave = () => {
     const amountNum = parseAmount(amount);
-    if (amountNum <= 0 || !description.trim()) return;
+    if (amountNum <= 0) return;
+    // For salary project: auto-generate description from month; otherwise require manual description
+    if (!isInternalProject && !description.trim()) return;
+
+    // Auto-generate description for salary transactions
+    const autoDesc = isInternalProject && salaryMonth
+      ? `Lương T${parseInt(salaryMonth.split('-')[1])}/${salaryMonth.split('-')[0]}`
+      : description.trim();
 
     const data = {
       type,
@@ -113,7 +120,7 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
       person: person.trim() || undefined,
       budgetLineId,
       salaryMonth: isInternalProject && salaryMonth ? salaryMonth : undefined,
-      description: description.trim(),
+      description: autoDesc || `Giao dịch ${type}`,
       date,
     };
 
@@ -240,34 +247,54 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
         </div>
       </div>
 
-      {/* Description */}
-      <div className="form-group">
-        <label>Mô tả <span className="required">*</span></label>
-        {type === 'chi' ? (
-          <BudgetLineAutocomplete
-            value={description}
-            budgetLineId={budgetLineId}
-            onChange={(desc, lineId) => { setDescription(desc); setBudgetLineId(lineId); }}
-            budgetLines={filteredChiBudgetLines}
-            placeholder="Chọn từ dự toán hoặc ghi tự do..."
-          />
-        ) : projectId && filteredThuBudgetLines.length > 0 ? (
-          <BudgetLineAutocomplete
-            value={description}
-            budgetLineId={budgetLineId}
-            onChange={(desc, lineId) => { setDescription(desc); setBudgetLineId(lineId); }}
-            budgetLines={filteredThuBudgetLines}
-            placeholder="Chọn từ dự toán thu hoặc ghi tự do..."
-          />
-        ) : (
-          <textarea
-            className="input"
-            placeholder="VD: Đặt cọc 50%, Thanh toán đợt 2..."
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-          />
-        )}
-      </div>
+      {/* Description — hidden when Salary project (auto-generated from month) */}
+      {!isInternalProject && (
+        <div className="form-group">
+          <label>Mô tả <span className="required">*</span></label>
+          {type === 'chi' ? (
+            <BudgetLineAutocomplete
+              value={description}
+              budgetLineId={budgetLineId}
+              onChange={(desc, lineId) => { setDescription(desc); setBudgetLineId(lineId); }}
+              budgetLines={filteredChiBudgetLines}
+              placeholder="Chọn từ dự toán hoặc ghi tự do..."
+            />
+          ) : projectId && filteredThuBudgetLines.length > 0 ? (
+            <BudgetLineAutocomplete
+              value={description}
+              budgetLineId={budgetLineId}
+              onChange={(desc, lineId) => { setDescription(desc); setBudgetLineId(lineId); }}
+              budgetLines={filteredThuBudgetLines}
+              placeholder="Chọn từ dự toán thu hoặc ghi tự do..."
+            />
+          ) : (
+            <textarea
+              className="input"
+              placeholder="VD: Đặt cọc 50%, Thanh toán đợt 2..."
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+            />
+          )}
+        </div>
+      )}
+      {/* Preview auto-desc khi Salary project */}
+      {isInternalProject && salaryMonth && (
+        <div className="form-group">
+          <label style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+            📝 Mô tả tự động
+          </label>
+          <div style={{
+            padding: '8px 12px',
+            background: 'rgba(108,92,231,0.08)',
+            border: '1px solid rgba(108,92,231,0.2)',
+            borderRadius: 8,
+            fontSize: '0.88rem',
+            color: 'var(--text-muted)',
+          }}>
+            💰 Lương T{parseInt(salaryMonth.split('-')[1])}/{salaryMonth.split('-')[0]}
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }
