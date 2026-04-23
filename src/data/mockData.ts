@@ -78,6 +78,10 @@ export interface Person {
   taxCode?: string;
   bankInfo?: string;
   baseSalary?: number;   // Lương cơ bản mặc định (dùng để auto-fill bảng lương)
+  // ─── Org-specific fields (tab Tổ Chức) ────────────
+  industry?: string;        // Phân ngành
+  representative?: string;  // Tên người đại diện (lấy từ danh bạ)
+  location?: string;        // Địa điểm / địa chỉ
   note?: string;
   createdAt: string;
 }
@@ -144,6 +148,20 @@ export const PEOPLE_TYPES = [
   { code: 'supplier',  icon: '🏢', name: 'Supplier',   color: '#e17055' },
   { code: 'org',       icon: '🏦', name: 'Tổ chức',   color: '#6c5ce7' },
 ] as const;
+
+// ─── Org Industries ──────────────────────────────────
+export const ORG_INDUSTRIES = [
+  'Quảng cáo / Marketing',
+  'Ngân hàng / Tài chính',
+  'FMCG / Hàng tiêu dùng',
+  'Dược phẩm / Y tế',
+  'Sản xuất / Công nghiệp',
+  'Công nghệ / Phần mềm',
+  'Bất động sản',
+  'Giải trí / Media',
+  'Giáo dục',
+  'Khác',
+];
 
 // ─── Mock People ─────────────────────────────────────
 export const MOCK_PEOPLE: Person[] = [

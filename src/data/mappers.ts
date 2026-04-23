@@ -210,6 +210,9 @@ export function rowToPerson(row: Record<string, any>): Person {
     taxCode: row.tax_code || undefined,
     bankInfo: row.bank_info || undefined,
     baseSalary: row.base_salary || undefined,
+    industry: row.industry || undefined,
+    representative: row.representative || undefined,
+    location: row.location || undefined,
     note: row.note || undefined,
     createdAt: row.created_at?.split('T')[0] || '',
   };
@@ -217,14 +220,17 @@ export function rowToPerson(row: Record<string, any>): Person {
 
 export function personToRow(data: Partial<Person>) {
   const row: Record<string, unknown> = {};
-  if (data.name       !== undefined) row.name        = data.name;
-  if (data.type       !== undefined) row.type        = data.type;
-  if (data.role       !== undefined) row.role        = data.role;
-  if (data.phone      !== undefined) row.phone       = data.phone;
-  if (data.taxCode    !== undefined) row.tax_code    = data.taxCode;
-  if (data.bankInfo   !== undefined) row.bank_info   = data.bankInfo;
-  if (data.baseSalary !== undefined) row.base_salary = data.baseSalary;
-  if (data.note       !== undefined) row.note        = data.note;
+  if (data.name           !== undefined) row.name           = data.name;
+  if (data.type           !== undefined) row.type           = data.type;
+  if (data.role           !== undefined) row.role           = data.role;
+  if (data.phone          !== undefined) row.phone          = data.phone;
+  if (data.taxCode        !== undefined) row.tax_code       = data.taxCode;
+  if (data.bankInfo       !== undefined) row.bank_info      = data.bankInfo;
+  if (data.baseSalary     !== undefined) row.base_salary    = data.baseSalary;
+  if (data.industry       !== undefined) row.industry       = data.industry || null;
+  if (data.representative !== undefined) row.representative = data.representative || null;
+  if (data.location       !== undefined) row.location       = data.location || null;
+  if (data.note           !== undefined) row.note           = data.note;
   return row;
 }
 

@@ -103,6 +103,7 @@ export default function StaffSalary() {
   const [histMonth, setHistMonth]   = useState(getCurrentMonth());
   const [histNote, setHistNote]     = useState('');
   const [histSaving, setHistSaving] = useState(false);
+  const [histError, setHistError] = useState<string | null>(null);
   const [histConfirm, setHistConfirm] = useState<SalaryBaseHistory | null>(null);
 
   // Is the viewed month frozen (past)?
@@ -231,9 +232,18 @@ export default function StaffSalary() {
     const base = fromMTr(histAmount);
     if (!base) return;
     setHistSaving(true);
+    setHistError(null);
     try {
       await addSalaryBaseHistory({ personName: histModal.person.name, baseSalary: base, effectiveFrom: histMonth, note: histNote.trim() || undefined });
-      setHistAmount(''); setHistNote(''); setHistModal(null);
+      setHistAmount(''); setHistNote(''); setHistError(null); setHistModal(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Lỗi không xác định';
+      // Friendly message for missing table
+      if (msg.includes('salary_base_history') || msg.includes('schema cache') || msg.includes('does not exist')) {
+        setHistError('Bảng salary_base_history chưa được tạo. Vui lòng chạy migration SQL trong Supabase Dashboard.');
+      } else {
+        setHistError(msg);
+      }
     } finally { setHistSaving(false); }
   }
 
@@ -513,7 +523,7 @@ export default function StaffSalary() {
 
       {/* ── History Update Modal ────────────────── */}
       {histModal && (
-        <div className="modal-overlay" onClick={() => setHistModal(null)}>
+        <div className="modal-overlay" onClick={() => { setHistModal(null); setHistError(null); }}>
           <div className="delete-modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
             <h3>✏️ Cập nhật lương CB — <strong>{histModal.person.name}</strong></h3>
             <p style={{color:'var(--text-muted)',fontSize:'0.85rem',marginTop:4}}>Thay đổi sẽ áp dụng từ tháng hiệu lực trở đi. Tháng cũ giữ nguyên.</p>
@@ -532,8 +542,17 @@ export default function StaffSalary() {
               <label className="form-label">Ghi chú</label>
               <input className="input" type="text" placeholder="VD: Tăng lương Q2, Điều chỉnh..." value={histNote} onChange={e=>setHistNote(e.target.value)} />
             </div>
+            {histError && (
+              <div style={{
+                background: '#e1705520', border: '1px solid #e1705555',
+                borderRadius: 8, padding: '10px 14px', marginBottom: 8,
+                color: '#e17055', fontSize: '0.83rem', lineHeight: 1.5,
+              }}>
+                ⚠️ {histError}
+              </div>
+            )}
             <div className="dm-actions">
-              <button className="btn btn-ghost" onClick={()=>setHistModal(null)}>Hủy</button>
+              <button className="btn btn-ghost" onClick={()=>{ setHistModal(null); setHistError(null); }}>Hủy</button>
               <button className="btn btn-primary" disabled={!histAmount || histSaving} onClick={submitHistory}>
                 {histSaving ? '⏳' : '✅'} Xác nhận
               </button>
