@@ -263,22 +263,25 @@ export default function StaffSalary() {
     } finally { setCopying(false); }
   }
 
-  // Summary (saved records only, đồng)
+  // Summary: tính cả rows chưa lưu (draft) lẫn đã lưu
   const summary = useMemo(() => {
-    const rows = roster.filter(({ record }) => record).map(({ person, record }) => {
-      const net      = record!.netSalary;
-      const txnPaid  = txnPaidMap[person.name] || 0;
-      const paid     = txnPaid > 0 ? txnPaid : record!.paidAmount;
-      const st       = autoStatus(paid, net);
-      return { net, paid, st };
+    const rows = roster.map(({ person, record }) => {
+      const row       = getRow(person, record);
+      // Net: ưu tiên record.netSalary nếu đã lưu, ngược lại tính từ draft
+      const net       = record ? record.netSalary : calcNetDong(row);
+      const txnPaid   = txnPaidMap[person.name] || 0;
+      const paid      = txnPaid > 0 ? txnPaid : (record ? record.paidAmount : 0);
+      const st        = autoStatus(paid, net);
+      return { net, paid, st, hasRecord: !!record };
     });
     return {
-      count: staffPeople.length, saved: rows.length,
+      count:     staffPeople.length,
+      saved:     rows.filter(r => r.hasRecord).length,
       totalNet:  rows.reduce((s, r) => s + r.net, 0),
       totalPaid: rows.reduce((s, r) => s + r.paid, 0),
       countPaid: rows.filter(r => r.st === 'paid').length,
     };
-  }, [roster, txnPaidMap, staffPeople.length]);
+  }, [roster, txnPaidMap, staffPeople.length, drafts, month]);
 
   const missingCount = roster.filter(r => !r.record).length;
 
@@ -316,7 +319,7 @@ export default function StaffSalary() {
         <div className="salary-card total">
           <div className="sc-label">Quỹ lương {formatMonth(month)}</div>
           <div className="sc-value">{fmTr(summary.totalNet)}</div>
-          <div className="sc-sub">{summary.saved}/{summary.count} nhân sự đã nhập</div>
+          <div className="sc-sub">{summary.saved}/{summary.count} đã lưu vào DB</div>
         </div>
         <div className="salary-card paid">
           <div className="sc-label">Đã chi</div>
@@ -326,7 +329,7 @@ export default function StaffSalary() {
         <div className="salary-card unpaid">
           <div className="sc-label">Còn phải trả</div>
           <div className="sc-value orange">{fmTr(summary.totalNet - summary.totalPaid)}</div>
-          <div className="sc-sub">{summary.saved - summary.countPaid} người chưa đủ</div>
+          <div className="sc-sub">{summary.count - summary.countPaid} người chưa đủ</div>
         </div>
       </div>
 
