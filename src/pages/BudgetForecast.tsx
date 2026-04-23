@@ -22,6 +22,7 @@ function getGroupedProjects(allProjects: Project[], search: string) {
   const q = search.toLowerCase();
   const filtered = allProjects.filter(p =>
     p.status !== 'archived' &&
+    !p.isInternal &&                // ← ẩn internal projects (Lương Lucid, etc.)
     (!q || p.name.toLowerCase().includes(q) || p.client.toLowerCase().includes(q))
   );
   const groups: { status: string; label: string; projects: Project[] }[] = [];
@@ -64,7 +65,7 @@ function parseAmount(raw: string): number {
 
 export default function BudgetForecast() {
   const { projects, transactions, phatSinhs, budgetLines, people, addBudgetLine, updateBudgetLine, deleteBudgetLine } = useData();
-  const defaultProject = projects.find(p => p.status === 'in_progress');
+  const defaultProject = projects.find(p => p.status === 'in_progress' && !p.isInternal);
   const [activeProject, setActiveProject] = useState(defaultProject?.id || '');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dropdownSearch, setDropdownSearch] = useState('');
