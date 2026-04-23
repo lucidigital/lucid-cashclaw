@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useData } from '../data/DataContext';
-import type { StaffSalary, Person } from '../data/mockData';
+import type { StaffSalary, Person, SalaryBaseHistory } from '../data/mockData';
 import './StaffSalary.css';
 
 // ─── Status config ─────────────────────────────────────────
@@ -82,8 +82,13 @@ function autoStatus(paidDong: number, netDong: number): StaffSalary['status'] {
 
 // ─── Component ─────────────────────────────────────────────
 export default function StaffSalary() {
-  const { people, staffSalaries, transactions, projects, addStaffSalary, updateStaffSalary, deleteStaffSalary } = useData();
+  const {
+    people, staffSalaries, transactions, projects,
+    salaryBaseHistory, addSalaryBaseHistory, deleteSalaryBaseHistory, getBaseSalaryForMonth,
+    addStaffSalary, updateStaffSalary, deleteStaffSalary,
+  } = useData();
 
+  const [activeTab, setActiveTab] = useState<'roster' | 'base'>('roster');
   const [month, setMonth]     = useState(getCurrentMonth());
   const [drafts, setDrafts]   = useState<Record<string, RowDraft>>({});
   const [saving, setSaving]   = useState<Record<string, boolean>>({});
@@ -91,6 +96,18 @@ export default function StaffSalary() {
   const [copying, setCopying] = useState(false);
   const [genBusy, setGenBusy] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ person: Person; record: StaffSalary } | null>(null);
+
+  // Salary history modal state
+  const [histModal, setHistModal] = useState<{ person: Person } | null>(null);
+  const [histAmount, setHistAmount] = useState('');
+  const [histMonth, setHistMonth]   = useState(getCurrentMonth());
+  const [histNote, setHistNote]     = useState('');
+  const [histSaving, setHistSaving] = useState(false);
+  const [histConfirm, setHistConfirm] = useState<SalaryBaseHistory | null>(null);
+
+  // Is the viewed month frozen (past)?
+  const currentMonth = getCurrentMonth();
+  const isFrozen = month < currentMonth;
 
   // Staff people only
   const staffPeople = useMemo(
@@ -128,10 +145,14 @@ export default function StaffSalary() {
     [staffPeople, monthRecords]);
 
   function getRow(person: Person, record: StaffSalary | null): RowDraft {
-    return drafts[person.id] ?? (record ? recordToDraft(record) : defaultDraft(person));
+    const d = drafts[person.id] ?? (record ? recordToDraft(record) : defaultDraft(person));
+    // CB always from history (not editable)
+    const histBase = getBaseSalaryForMonth(person.name, month);
+    return { ...d, baseSalary: histBase ? toMTr(histBase) : d.baseSalary };
   }
 
   function patch(personId: string, person: Person, record: StaffSalary | null, field: keyof RowDraft, val: string) {
+    if (isFrozen && (field === 'bonus' || field === 'deduction')) return; // lock past months
     const base = drafts[personId] ?? (record ? recordToDraft(record) : defaultDraft(person));
     setDrafts(prev => ({ ...prev, [personId]: { ...base, [field]: val } }));
   }
@@ -196,12 +217,24 @@ export default function StaffSalary() {
     setGenBusy(true);
     try {
       await Promise.all(missing.map(({ person }) => {
-        const d = getRow(person, null);
-        const b = fromMTr(d.baseSalary), bo = fromMTr(d.bonus), de = fromMTr(d.deduction);
-        return addStaffSalary({ personName: person.name, month, baseSalary: b, bonus: bo, deduction: de, netSalary: b + bo - de, status: 'pending', paidAmount: 0 });
+        const histBase = getBaseSalaryForMonth(person.name, month);
+        const b = histBase || (person.baseSalary ?? 0);
+        return addStaffSalary({ personName: person.name, month, baseSalary: b, bonus: 0, deduction: 0, netSalary: b, status: 'pending', paidAmount: 0 });
       }));
       setDrafts({});
     } finally { setGenBusy(false); }
+  }
+
+  // ─── Salary History Handlers ───────────────────────
+  async function submitHistory() {
+    if (!histModal) return;
+    const base = fromMTr(histAmount);
+    if (!base) return;
+    setHistSaving(true);
+    try {
+      await addSalaryBaseHistory({ personName: histModal.person.name, baseSalary: base, effectiveFrom: histMonth, note: histNote.trim() || undefined });
+      setHistAmount(''); setHistNote(''); setHistModal(null);
+    } finally { setHistSaving(false); }
   }
 
   async function copyLastMonth() {
@@ -242,18 +275,25 @@ export default function StaffSalary() {
   return (
     <div className="salary-page animate-fade-in">
 
+      {/* ── Tab selector ───────────────────────── */}
+      <div className="salary-tabs">
+        <button className={`salary-tab${activeTab==='roster'?' active':''}`} onClick={()=>setActiveTab('roster')}>📅 Lương Tháng</button>
+        <button className={`salary-tab${activeTab==='base'?' active':''}`} onClick={()=>setActiveTab('base')}>📋 Lương Cố Định</button>
+      </div>
+
+      {activeTab === 'roster' && (<>
       {/* ── Header ─────────────────────────────── */}
       <div className="salary-header">
         <div className="month-nav">
           <button className="month-arrow" onClick={() => setMonth(m => shiftMonth(m, -1))}>‹</button>
-          <div className="month-label">{formatMonth(month)}</div>
+          <div className="month-label">{formatMonth(month)}{isFrozen && <span className="frozen-badge">🔒 Đã qua</span>}</div>
           <button className="month-arrow" onClick={() => setMonth(m => shiftMonth(m, 1))}>›</button>
         </div>
         <div className="salary-toolbar-actions">
           <button className="btn btn-ghost btn-sm" onClick={copyLastMonth} disabled={copying}>
             {copying ? '⏳' : '📋'} Copy tháng trước
           </button>
-          {missingCount > 0 && (
+          {missingCount > 0 && !isFrozen && (
             <button className="btn btn-primary btn-sm" onClick={generateAll} disabled={genBusy}>
               {genBusy ? '⏳ Đang tạo...' : `⚡ Tạo ${missingCount} dòng còn thiếu`}
             </button>
@@ -328,25 +368,33 @@ export default function StaffSalary() {
                 {dirty && !isNew && <span className="dirty-badge">Đã sửa</span>}
               </span>
 
-              {/* Lương CB */}
+              {/* Lương CB — read-only, từ history */}
               <span className="rt-money">
-                <input className="ri" type="number" step="0.5" placeholder="0"
-                  value={row.baseSalary} disabled={busy}
-                  onChange={e => patch(person.id, person, record, 'baseSalary', e.target.value)} />
+                <input className="ri ri-base" type="number" step="0.5" placeholder="0"
+                  value={row.baseSalary} disabled title="Lương CB được quản lý trong tab Lương Cố Định"
+                  readOnly />
               </span>
 
               {/* Thưởng */}
               <span className="rt-money">
-                <input className="ri ri-bonus" type="number" step="0.5" placeholder="0"
-                  value={row.bonus} disabled={busy}
-                  onChange={e => patch(person.id, person, record, 'bonus', e.target.value)} />
+                {isFrozen ? (
+                  <span className="ri-frozen">{row.bonus || '—'}</span>
+                ) : (
+                  <input className="ri ri-bonus" type="number" step="0.5" placeholder="0"
+                    value={row.bonus} disabled={busy}
+                    onChange={e => patch(person.id, person, record, 'bonus', e.target.value)} />
+                )}
               </span>
 
               {/* Khấu trừ */}
               <span className="rt-money">
-                <input className="ri ri-deduct" type="number" step="0.5" placeholder="0"
-                  value={row.deduction} disabled={busy}
-                  onChange={e => patch(person.id, person, record, 'deduction', e.target.value)} />
+                {isFrozen ? (
+                  <span className="ri-frozen">{row.deduction || '—'}</span>
+                ) : (
+                  <input className="ri ri-deduct" type="number" step="0.5" placeholder="0"
+                    value={row.deduction} disabled={busy}
+                    onChange={e => patch(person.id, person, record, 'deduction', e.target.value)} />
+                )}
               </span>
 
               {/* Net */}
@@ -410,8 +458,105 @@ export default function StaffSalary() {
           </div>
         )}
       </div>
+      </>)}
 
-      {/* ── Delete Modal ───────────────────────── */}
+      {/* ── Tab: Lương Cố Định ──────────────────── */}
+      {activeTab === 'base' && (
+        <div className="card base-salary-card">
+          <div className="base-salary-header">
+            <h3>📋 Bảng Lương Cố Định</h3>
+            <span className="base-hint">Thay đổi lương sẽ áp dụng từ tháng hiệu lực trở đi. Tháng cũ không thay đổi.</span>
+          </div>
+          <div className="base-table">
+            <div className="base-thead">
+              <span>Nhân sự</span>
+              <span>Lương CB hiện tại</span>
+              <span>Hiệu lực từ</span>
+              <span>Thao tác</span>
+            </div>
+            {staffPeople.map(person => {
+              const hist = salaryBaseHistory
+                .filter(h => h.personName === person.name)
+                .sort((a,b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
+              const current = hist[0];
+              const avatarColor = TYPE_COLORS[person.type] || '#6c5ce7';
+              return (
+                <div key={person.id} className="base-row">
+                  <span className="name-cell">
+                    <span className="r-avatar" style={{background: avatarColor}}>{person.name.charAt(0)}</span>
+                    <span className="r-info">
+                      <span className="r-fullname">{person.name}</span>
+                      {person.role && <span className="r-role">{person.role}</span>}
+                    </span>
+                  </span>
+                  <span className="base-current">
+                    {current ? <strong>{fmTr(current.baseSalary)}</strong> : <span className="text-muted">Chưa có</span>}
+                  </span>
+                  <span className="base-since">
+                    {current ? formatMonth(current.effectiveFrom) : '—'}
+                    {hist.length > 1 && <span className="hist-count"> +{hist.length-1} mốc</span>}
+                  </span>
+                  <span className="base-actions">
+                    <button className="act-btn save" title="Cập nhật lương" onClick={() => {
+                      setHistModal({person});
+                      setHistAmount(current ? toMTr(current.baseSalary) : '');
+                      setHistMonth(getCurrentMonth());
+                      setHistNote('');
+                    }}>✏️ Cập nhật</button>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── History Update Modal ────────────────── */}
+      {histModal && (
+        <div className="modal-overlay" onClick={() => setHistModal(null)}>
+          <div className="delete-modal" style={{maxWidth:420}} onClick={e => e.stopPropagation()}>
+            <h3>✏️ Cập nhật lương CB — <strong>{histModal.person.name}</strong></h3>
+            <p style={{color:'var(--text-muted)',fontSize:'0.85rem',marginTop:4}}>Thay đổi sẽ áp dụng từ tháng hiệu lực trở đi. Tháng cũ giữ nguyên.</p>
+            <div className="form-group" style={{marginTop:16}}>
+              <label className="form-label">Lương CB mới <span style={{color:'#e17055'}}>*</span></label>
+              <div className="amount-input-wrapper">
+                <input className="input" type="number" step="0.5" placeholder="VD: 10" value={histAmount} onChange={e=>setHistAmount(e.target.value)} />
+                <span className="currency">triệu ₫</span>
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Hiệu lực từ tháng <span style={{color:'#e17055'}}>*</span></label>
+              <input className="input" type="month" value={histMonth} onChange={e=>setHistMonth(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Ghi chú</label>
+              <input className="input" type="text" placeholder="VD: Tăng lương Q2, Điều chỉnh..." value={histNote} onChange={e=>setHistNote(e.target.value)} />
+            </div>
+            <div className="dm-actions">
+              <button className="btn btn-ghost" onClick={()=>setHistModal(null)}>Hủy</button>
+              <button className="btn btn-primary" disabled={!histAmount || histSaving} onClick={submitHistory}>
+                {histSaving ? '⏳' : '✅'} Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete History Confirm ──────────────── */}
+      {histConfirm && (
+        <div className="modal-overlay" onClick={()=>setHistConfirm(null)}>
+          <div className="delete-modal" onClick={e=>e.stopPropagation()}>
+            <h3>🗑️ Xóa mốc lương?</h3>
+            <p>{histConfirm.personName} — {fmTr(histConfirm.baseSalary)} từ {formatMonth(histConfirm.effectiveFrom)}</p>
+            <div className="dm-actions">
+              <button className="btn btn-ghost" onClick={()=>setHistConfirm(null)}>Hủy</button>
+              <button className="btn btn-danger" onClick={async()=>{ await deleteSalaryBaseHistory(histConfirm.id); setHistConfirm(null); }}>Xóa</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Roster Modal ─────────────────── */}
       {deleteTarget && (
         <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
           <div className="delete-modal" onClick={e => e.stopPropagation()}>

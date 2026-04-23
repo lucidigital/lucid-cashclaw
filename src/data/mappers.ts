@@ -1,7 +1,7 @@
 // ─── Lucid CashClaw — Data Mappers ──────────────────
 // Convert between camelCase (TypeScript) ↔ snake_case (PostgreSQL)
 
-import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, ManualDebt, Person, StaffSalary } from './mockData';
+import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, ManualDebt, Person, StaffSalary, SalaryBaseHistory } from './mockData';
 import type { BudgetLine } from './budgetData';
 
 // ─── Generic snake_case → camelCase ─────────────────
@@ -262,5 +262,27 @@ export function staffSalaryToRow(data: Partial<StaffSalary>) {
   if (data.paidAmount  !== undefined) row.paid_amount  = data.paidAmount;
   if (data.paidDate    !== undefined) row.paid_date    = data.paidDate || null;
   if (data.note        !== undefined) row.note         = data.note || null;
+  return row;
+}
+
+// ─── SalaryBaseHistory Mappers ───────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function rowToSalaryBaseHistory(row: Record<string, any>): SalaryBaseHistory {
+  return {
+    id: row.id,
+    personName: row.person_name,
+    baseSalary: row.base_salary ?? 0,
+    effectiveFrom: row.effective_from,
+    note: row.note || undefined,
+    createdAt: row.created_at?.split('T')[0] || '',
+  };
+}
+
+export function salaryBaseHistoryToRow(data: Partial<SalaryBaseHistory>) {
+  const row: Record<string, unknown> = {};
+  if (data.personName    !== undefined) row.person_name    = data.personName;
+  if (data.baseSalary    !== undefined) row.base_salary    = data.baseSalary;
+  if (data.effectiveFrom !== undefined) row.effective_from = data.effectiveFrom;
+  if (data.note          !== undefined) row.note           = data.note || null;
   return row;
 }

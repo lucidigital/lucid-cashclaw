@@ -449,3 +449,189 @@
   .rt-money, .rt-net, .rt-status, .rt-actions { padding: 0; }
   .action-cell { justify-content: flex-start; }
 }
+
+/* ── Salary Tabs ──────────────────────────────────── */
+.salary-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 4px;
+  align-self: flex-start;
+}
+
+.salary-tab {
+  background: none;
+  border: none;
+  border-radius: 9px;
+  padding: 8px 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.salary-tab:hover { background: var(--bg-hover); color: var(--text-primary); }
+.salary-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(108,92,231,0.4);
+}
+
+/* ── Frozen badge (past month) ────────────────────── */
+.frozen-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(225,112,85,0.15);
+  color: #e17055;
+  border: 1px solid rgba(225,112,85,0.3);
+  margin-left: 10px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+/* ── Base salary CB input (read-only) ─────────────── */
+.ri.ri-base {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: rgba(108,92,231,0.06);
+  border-color: rgba(108,92,231,0.2) !important;
+  color: #a29bfe;
+}
+
+/* ── Frozen cell display (non-editable past months) ── */
+.ri-frozen {
+  display: block;
+  text-align: right;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+  font-family: 'Inter', monospace;
+}
+
+/* ── Base Salary Tab ──────────────────────────────── */
+.base-salary-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.base-salary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+.base-salary-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.base-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.base-table { display: flex; flex-direction: column; }
+
+.base-thead,
+.base-row {
+  display: grid;
+  grid-template-columns: 220px 1fr 1fr 140px;
+  align-items: center;
+  gap: 0;
+}
+.base-thead {
+  padding: 10px 0;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+.base-thead > span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 0 10px;
+}
+
+.base-row {
+  border-bottom: 1px solid var(--border-color);
+  min-height: 58px;
+  transition: background 0.15s;
+}
+.base-row:last-child { border-bottom: none; }
+.base-row:hover { background: var(--bg-hover); }
+
+.base-current {
+  padding: 0 10px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+.base-current strong { color: #a29bfe; }
+.text-muted { color: var(--text-muted); }
+
+.base-since {
+  padding: 0 10px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.hist-count {
+  margin-left: 6px;
+  font-size: 0.72rem;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(108,92,231,0.15);
+  color: #a29bfe;
+  border: 1px solid rgba(108,92,231,0.25);
+}
+
+.base-actions {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.act-btn.save {
+  width: auto;
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  gap: 4px;
+}
+
+/* ── Form helpers used in history modal ───────────── */
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+.input {
+  background: var(--bg-input, rgba(255,255,255,0.05));
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  padding: 10px 14px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.input:focus { outline: none; border-color: var(--accent); }
+.amount-input-wrapper { position: relative; display: flex; align-items: center; }
+.amount-input-wrapper .input { padding-right: 72px; }
+.currency {
+  position: absolute;
+  right: 14px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.delete-modal .form-group { text-align: left; }

@@ -9,9 +9,11 @@ import {
   rowToDebtEntry, rowToBudgetLine, rowToPerson, rowToManualDebt, manualDebtToRow,
   projectToRow, transactionToRow, milestoneToRow, phatSinhToRow, budgetLineToRow, personToRow,
   rowToStaffSalary, staffSalaryToRow,
+  rowToSalaryBaseHistory, salaryBaseHistoryToRow,
 } from './mappers';
-import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, ManualDebt, Person, StaffSalary } from './mockData';
+import type { Project, Transaction, PaymentMilestone, PhatSinh, DebtEntry, ManualDebt, Person, StaffSalary, SalaryBaseHistory } from './mockData';
 import type { BudgetLine } from './budgetData';
+
 
 // ─── Context Type (unchanged from Phase A) ──────────
 interface DataContextType {
@@ -69,6 +71,13 @@ interface DataContextType {
   addStaffSalary: (s: Omit<StaffSalary, 'id' | 'createdAt'>) => Promise<StaffSalary>;
   updateStaffSalary: (id: string, updates: Partial<StaffSalary>) => Promise<void>;
   deleteStaffSalary: (id: string) => Promise<void>;
+
+  // Salary Base History
+  salaryBaseHistory: SalaryBaseHistory[];
+  addSalaryBaseHistory: (h: Omit<SalaryBaseHistory, 'id' | 'createdAt'>) => Promise<SalaryBaseHistory>;
+  deleteSalaryBaseHistory: (id: string) => Promise<void>;
+  /** Lấy mức lương CB của 1 người tại tháng cụ thể */
+  getBaseSalaryForMonth: (personName: string, month: string) => number;
 
   // Helpers (computed from state — same as Phase A)
   getProjectTotals: (projectId: string) => {
@@ -142,6 +151,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [people, setPeople] = useState<Person[]>([]);
   const [manualDebts, setManualDebts] = useState<ManualDebt[]>([]);
   const [staffSalaries, setStaffSalaries] = useState<StaffSalary[]>([]);
+  const [salaryBaseHistory, setSalaryBaseHistory] = useState<SalaryBaseHistory[]>([]);
 
   // ─── Initial fetch ────────────────────────────────
   useEffect(() => {
@@ -149,7 +159,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
       try {
-        const [pRes, tRes, mRes, psRes, dRes, blRes, peRes, mdRes, ssRes] = await Promise.all([
+        const [pRes, tRes, mRes, psRes, dRes, blRes, peRes, mdRes, ssRes, sbhRes] = await Promise.all([
+
           supabase.from('projects').select('*').order('created_at', { ascending: false }),
           supabase.from('transactions').select('*').order('date', { ascending: false }),
           supabase.from('milestones').select('*').order('dot'),
@@ -159,6 +170,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           supabase.from('people').select('*').order('name'),
           supabase.from('manual_debts').select('*').order('date', { ascending: false }),
           supabase.from('staff_salaries').select('*').order('month', { ascending: false }),
+          supabase.from('salary_base_history').select('*').order('effective_from', { ascending: false }),
+
         ]);
 
         if (pRes.error) throw pRes.error;
@@ -171,6 +184,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (peRes.error) console.warn('people table not found, skipping:', peRes.error.message);
         if (mdRes.error) console.warn('manual_debts table not found, skipping:', mdRes.error.message);
         if (ssRes.error) console.warn('staff_salaries table not found, skipping:', ssRes.error.message);
+        if (sbhRes.error) console.warn('salary_base_history table not found, skipping:', sbhRes.error.message);
 
         setProjects((pRes.data || []).map(rowToProject));
         setTransactions((tRes.data || []).map(rowToTransaction));
@@ -181,6 +195,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setPeople((peRes.data || []).map(rowToPerson));
         setManualDebts((mdRes.data || []).map(rowToManualDebt));
         setStaffSalaries((ssRes.data || []).map(rowToStaffSalary));
+        setSalaryBaseHistory((sbhRes.data || []).map(rowToSalaryBaseHistory));
+
       } catch (err) {
         console.error('Failed to fetch data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -314,6 +330,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'staff_salaries' }, (payload) => {
         setStaffSalaries(prev => prev.filter(ss => ss.id !== payload.old.id));
+      })
+
+      // ── Salary Base History ───────────────────────────
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'salary_base_history' }, (payload) => {
+        const newH = rowToSalaryBaseHistory(payload.new);
+        setSalaryBaseHistory(prev => {
+          if (prev.some(h => h.id === newH.id)) return prev;
+          return [newH, ...prev];
+        });
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'salary_base_history' }, (payload) => {
+        setSalaryBaseHistory(prev => prev.filter(h => h.id !== payload.old.id));
       })
 
       .subscribe((status) => {
@@ -797,10 +825,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setStaffSalaries(prev => prev.filter(ss => ss.id !== id));
   }, []);
 
+  // ─── Salary Base History CRUD ───────────────────────
+  const addSalaryBaseHistory = useCallback(async (data: Omit<SalaryBaseHistory, 'id' | 'createdAt'>): Promise<SalaryBaseHistory> => {
+    const row = salaryBaseHistoryToRow(data);
+    const { data: rows, error: err } = await supabase
+      .from('salary_base_history').insert(row).select().single();
+    if (err) throw err;
+    const newH = rowToSalaryBaseHistory(rows);
+    setSalaryBaseHistory(prev => [newH, ...prev]);
+    return newH;
+  }, []);
+
+  const deleteSalaryBaseHistory = useCallback(async (id: string) => {
+    const { error: err } = await supabase
+      .from('salary_base_history').delete().eq('id', id);
+    if (err) throw err;
+    setSalaryBaseHistory(prev => prev.filter(h => h.id !== id));
+  }, []);
+
+  // ─── Helper: Lấy lương CB hiệu lực tại tháng T ──────────
+  // Lấy record có effective_from ≤ month gần nhất (mới nhất)
+  const getBaseSalaryForMonth = useCallback((personName: string, month: string): number => {
+    const records = salaryBaseHistory
+      .filter(h => h.personName === personName && h.effectiveFrom <= month)
+      .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
+    return records[0]?.baseSalary ?? 0;
+  }, [salaryBaseHistory]);
+
   return (
     <DataContext.Provider value={{
       projects, transactions, milestones, phatSinhs, debtEntries, budgetLines,
-      people, manualDebts, staffSalaries,
+      people, manualDebts, staffSalaries, salaryBaseHistory,
       loading, error,
       addProject, updateProject, deleteProject,
       addTransaction, updateTransaction, deleteTransaction,
@@ -810,6 +865,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       addPerson, updatePerson, deletePerson,
       addManualDebt, updateManualDebt, deleteManualDebt,
       addStaffSalary, updateStaffSalary, deleteStaffSalary,
+      addSalaryBaseHistory, deleteSalaryBaseHistory, getBaseSalaryForMonth,
       getProjectTotals, getDebtSummary, getAdvanceSummary,
       getReceivablesSummary, getBudgetSummary, getPayableSummary,
     }}>

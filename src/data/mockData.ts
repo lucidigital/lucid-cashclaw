@@ -86,7 +86,7 @@ export interface StaffSalary {
   id: string;
   personName: string;       // Tên staff (link theo name)
   month: string;            // Format: 'YYYY-MM'
-  baseSalary: number;       // Lương cơ bản
+  baseSalary: number;       // Lương cơ bản (snapshot tại thời điểm tạo row)
   bonus: number;            // Thưởng / phụ cấp
   deduction: number;        // Khấu trừ / tạm ứng trừ vào lương
   netSalary: number;        // = baseSalary + bonus - deduction
@@ -94,6 +94,16 @@ export interface StaffSalary {
   paidAmount: number;       // Đã trả thực tế
   paidDate?: string;        // Ngày chi
   note?: string;
+  createdAt: string;
+}
+
+// Lịch sử thay đổi lương cơ bản — mỗi record là 1 mốc tăng/giảm lương
+export interface SalaryBaseHistory {
+  id: string;
+  personName: string;       // Tên nhân sự
+  baseSalary: number;       // Mức lương CB tại mốc này
+  effectiveFrom: string;    // 'YYYY-MM': tháng bắt đầu áp dụng
+  note?: string;            // Ghi chú (VD: 'Tăng lương Q2', 'Điều chỉnh')
   createdAt: string;
 }
 
