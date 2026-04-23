@@ -92,7 +92,7 @@ export default function BudgetForecast() {
   // Thu: default → Tổ chức + Leader
   const [thuPersonTypeFilter, setThuPersonTypeFilter] = useState<Set<string>>(new Set(['org', 'leader']));
   // Chi: default → Leader + Staff + Freelance + Supplier
-  const [chiPersonTypeFilter, setChiPersonTypeFilter] = useState<Set<string>>(new Set(['leader', 'staff', 'freelance', 'supplier']));
+  const [chiPersonTypeFilter, setChiPersonTypeFilter] = useState<Set<string>>(new Set(['leader', 'staff', 'freelance', 'partners', 'supplier']));
   const ALL_PERSON_TYPES = new Set(PEOPLE_TYPES.map(t => t.code));
 
   // Helper: check if person passes filter
@@ -431,7 +431,7 @@ export default function BudgetForecast() {
             ＋ Thêm
           </button>
         </div>
-        {renderPersonTypePills(chiPersonTypeFilter, setChiPersonTypeFilter, ['leader', 'staff', 'freelance', 'supplier'])}
+        {renderPersonTypePills(chiPersonTypeFilter, setChiPersonTypeFilter, ['leader', 'staff', 'freelance', 'partners', 'supplier'])}
         <div className="budget-table budget-chi-table">
           <div className="budget-thead budget-chi-thead">
             <span>Người / Tổ chức</span>
@@ -716,7 +716,7 @@ export default function BudgetForecast() {
                     onChange={setFormPerson}
                     placeholder="VD: Trung Ca, Studio XYZ..."
                     hint="Tên chính xác để match với Transactions"
-                    defaultFilterTypes={['leader', 'staff', 'freelance', 'supplier']}
+                    defaultFilterTypes={['leader', 'staff', 'freelance', 'partners', 'supplier']}
                   />
                 </div>
               )}

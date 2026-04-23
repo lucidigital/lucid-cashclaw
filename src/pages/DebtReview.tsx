@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { formatVND, formatFullVND, type Transaction } from '../data/mockData';
 import { useData } from '../data/DataContext';
 import Modal from '../components/Modal';
@@ -375,6 +375,7 @@ function ReceivablesTab() {
     { code: 'staff', label: '👥 Staff' },
     { code: 'freelance', label: '👤 Freelance' },
     { code: 'supplier', label: '🏭 Supplier' },
+    { code: 'partners', label: 'u{1F91D} Partners' },
     { code: 'org', label: '🏦 Tổ chức' },
   ];
 
@@ -481,7 +482,7 @@ function ReceivablesTab() {
           <div className="recv-list">
             {filteredPayables.map(e => {
               const personType = personTypeMap[e.person.toLowerCase()] || 'staff';
-              const typeIcon = { leader: '👑', staff: '👥', freelance: '👤', supplier: '🏭', org: '🏦' }[personType] || '👤';
+              const typeIcon = { leader: 'u{1F451}', staff: 'u{1F465}', freelance: 'u{1F464}', partners: 'u{1F91D}', supplier: 'u{1F3E2}', org: 'u{1F3E6}' }[personType] || '👤';
               return (
                 <div key={e.person} className="recv-row">
                   <div className="recv-row-left">

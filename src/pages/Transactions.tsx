@@ -19,7 +19,7 @@ export default function Transactions() {
   const ALL_TYPE_CODES = new Set(PEOPLE_TYPES.map(t => t.code));
   const DEFAULT_PERSON_TYPES: Record<string, Set<string>> = {
     thu:  new Set(['org', 'leader']),
-    chi:  new Set(['leader', 'staff', 'freelance', 'supplier']),
+    chi:  new Set(['leader', 'staff', 'freelance', 'partners', 'supplier']),
     all:  new Set(ALL_TYPE_CODES),
   };
   const [personTypeFilter, setPersonTypeFilter] = useState<Set<string>>(new Set(ALL_TYPE_CODES));

@@ -11,7 +11,7 @@ const STATUS_MAP: Record<StaffSalary['status'], { label: string; icon: string; c
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  leader: '#fdcb6e', staff: '#00b894', freelance: '#0984e3',
+  leader: '#fdcb6e', staff: '#00b894', freelance: '#0984e3', partners: '#fd79a8',
 };
 
 // ─── Triệu helpers ─────────────────────────────────────────

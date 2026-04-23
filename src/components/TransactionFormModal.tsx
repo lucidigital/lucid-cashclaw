@@ -238,7 +238,7 @@ export default function TransactionFormModal({ open, onClose, editTransaction, d
             value={person}
             onChange={setPerson}
             placeholder="Hùng, Sound Studio..."
-            defaultFilterTypes={type === 'thu' ? ['org', 'leader'] : ['leader', 'staff', 'freelance', 'supplier']}
+            defaultFilterTypes={type === 'thu' ? ['org', 'leader'] : ['leader', 'staff', 'freelance', 'partners', 'supplier']}
           />
         </div>
         <div className="form-group">
