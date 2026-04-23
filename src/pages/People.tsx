@@ -10,8 +10,8 @@ import './StaffSalary.css';
 // ─── Type config map ─────────────────────────────────
 const TYPE_MAP = Object.fromEntries(PEOPLE_TYPES.map(t => [t.code, t]));
 
-// Danh bạ = leader/staff/freelance | Tổ chức = org/supplier
-const CONTACT_TYPES   = ['leader', 'staff', 'freelance'];
+// Danh bạ = leader/staff/freelance/partners | Tổ chức = org/supplier
+const CONTACT_TYPES   = ['leader', 'staff', 'freelance', 'partners'];
 const ORG_TYPES       = ['org', 'supplier'];
 const CONTACT_TYPE_LIST = PEOPLE_TYPES.filter(t => CONTACT_TYPES.includes(t.code));
 const ORG_TYPE_LIST     = PEOPLE_TYPES.filter(t => ORG_TYPES.includes(t.code));

@@ -72,7 +72,7 @@ export interface ManualDebt {
 export interface Person {
   id: string;
   name: string;
-  type: 'leader' | 'staff' | 'freelance' | 'supplier' | 'org';
+  type: 'leader' | 'staff' | 'freelance' | 'partners' | 'supplier' | 'org';
   role?: string;
   phone?: string;
   taxCode?: string;
@@ -142,11 +142,12 @@ export const CATEGORIES_CHI = [
 
 // ─── People Types ────────────────────────────────────
 export const PEOPLE_TYPES = [
-  { code: 'leader',    icon: '👑', name: 'Leader',     color: '#fdcb6e' },
-  { code: 'staff',     icon: '👥', name: 'Staff',      color: '#00b894' },
-  { code: 'freelance', icon: '👤', name: 'Freelance',  color: '#0984e3' },
-  { code: 'supplier',  icon: '🏢', name: 'Supplier',   color: '#e17055' },
-  { code: 'org',       icon: '🏦', name: 'Tổ chức',   color: '#6c5ce7' },
+  { code: 'leader',   icon: '👑', name: 'Leader',    color: '#fdcb6e' },
+  { code: 'staff',    icon: '👥', name: 'Staff',     color: '#00b894' },
+  { code: 'freelance',icon: '👤', name: 'Freelance', color: '#0984e3' },
+  { code: 'partners', icon: '🤝', name: 'Partners',  color: '#fd79a8' },
+  { code: 'supplier', icon: '🏢', name: 'Supplier',  color: '#e17055' },
+  { code: 'org',      icon: '🏦', name: 'Tổ chức', color: '#6c5ce7' },
 ] as const;
 
 // ─── Org Industries ──────────────────────────────────
