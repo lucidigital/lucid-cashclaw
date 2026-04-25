@@ -8,6 +8,15 @@ import './PersonAutocomplete.css';
 const TYPE_MAP = Object.fromEntries(PEOPLE_TYPES.map(t => [t.code, t]));
 const ALL_TYPE_CODES = PEOPLE_TYPES.map(t => t.code);
 
+/** Strip Vietnamese diacritics for fuzzy, no-accent search */
+function removeDiacritics(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+}
+
 interface Props {
   value: string;
   onChange: (val: string) => void;
@@ -45,14 +54,21 @@ export default function PersonAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Filter by typed value AND active type filter
+  // Supports diacritic-insensitive search: "Vu Hoang" matches "Vũ Hoàng"
+  const normalizedInput = removeDiacritics(value.trim()).toLowerCase();
   const isAllTypes = typeFilter.size >= ALL_TYPE_CODES.length;
   const byType = isAllTypes ? people : people.filter(p => typeFilter.has(p.type));
   const filtered = value.trim().length === 0
     ? byType.slice(0, 8)
-    : byType.filter(p =>
-        p.name.toLowerCase().includes(value.toLowerCase()) ||
-        p.role?.toLowerCase().includes(value.toLowerCase())
-      ).slice(0, 8);
+    : byType.filter(p => {
+        const normName = removeDiacritics(p.name).toLowerCase();
+        const normRole = removeDiacritics(p.role || '').toLowerCase();
+        // Match against both diacritic-stripped AND original for best coverage
+        return normName.includes(normalizedInput) ||
+               normRole.includes(normalizedInput) ||
+               p.name.toLowerCase().includes(value.toLowerCase()) ||
+               p.role?.toLowerCase().includes(value.toLowerCase());
+      }).slice(0, 8);
 
   // Close dropdown when clicking outside
   useEffect(() => {
