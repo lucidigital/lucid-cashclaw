@@ -34,6 +34,10 @@ export default function Transactions() {
   const [editTxn, setEditTxn] = useState<Transaction | null>(null);
   const [deleteTxnId, setDeleteTxnId] = useState<number | null>(null);
 
+  // Pagination
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
+
   const filtered = transactions.filter(t => {
     if (typeFilter !== 'all' && t.type !== typeFilter) return false;
     if (catFilter && t.category !== catFilter) return false;
@@ -53,6 +57,12 @@ export default function Transactions() {
     }
     return true;
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [typeFilter, catFilter, projectFilter, search, personTypeFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const totalThu = filtered.filter(t => t.type === 'thu').reduce((s, t) => s + t.amount, 0);
   const totalChi = filtered.filter(t => t.type === 'chi').reduce((s, t) => s + t.amount, 0);
@@ -123,6 +133,9 @@ export default function Transactions() {
       {/* Summary pills */}
       <div className="txn-summary">
         <span className="summary-badge">{filtered.length} giao dịch</span>
+        {totalPages > 1 && (
+          <span className="summary-badge">Trang {page}/{totalPages}</span>
+        )}
         <span className="summary-badge text-income">📥 +{formatVND(totalThu)}</span>
         <span className="summary-badge text-expense">📤 −{formatVND(totalChi)}</span>
         <span className={`summary-badge ${totalThu - totalChi >= 0 ? 'text-income' : 'text-expense'}`}>
@@ -143,7 +156,7 @@ export default function Transactions() {
             <span className="txn-right">Số tiền</span>
             <span className="txn-right">Thao tác</span>
           </div>
-          {filtered.map(t => {
+          {paginated.map(t => {
             const project = projects.find(p => p.id === t.projectId);
             const cat = catMap[t.category];
             return (
@@ -176,6 +189,48 @@ export default function Transactions() {
           <div className="empty-state" style={{ padding: '2rem' }}>
             <span style={{ fontSize: '2rem' }}>📭</span>
             <p>Không có giao dịch nào</p>
+          </div>
+        )}
+        {/* Pagination controls */}
+        {totalPages > 1 && (
+          <div className="txn-pagination">
+            <button
+              className="page-btn"
+              disabled={page === 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+            >
+              ← Trước
+            </button>
+            <div className="page-numbers">
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 2)
+                .reduce<(number | '...')[]>((acc, n, idx, arr) => {
+                  if (idx > 0 && n - (arr[idx - 1] as number) > 1) acc.push('...');
+                  acc.push(n);
+                  return acc;
+                }, [])
+                .map((n, i) =>
+                  n === '...' ? (
+                    <span key={`dots-${i}`} className="page-dots">…</span>
+                  ) : (
+                    <button
+                      key={n}
+                      className={`page-btn page-num ${page === n ? 'active' : ''}`}
+                      onClick={() => setPage(n as number)}
+                    >
+                      {n}
+                    </button>
+                  )
+                )
+              }
+            </div>
+            <button
+              className="page-btn"
+              disabled={page === totalPages}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            >
+              Tiếp →
+            </button>
           </div>
         )}
       </div>
