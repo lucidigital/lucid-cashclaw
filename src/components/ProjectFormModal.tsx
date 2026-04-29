@@ -4,6 +4,8 @@ import Modal from './Modal';
 import { PROJECT_TYPES, type Project } from '../data/mockData';
 import { useData } from '../data/DataContext';
 
+const VAT_RATE = 0.08; // 8% VAT
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -18,6 +20,7 @@ export default function ProjectFormModal({ open, onClose, editProject }: Props) 
   const [client, setClient] = useState('');
   const [type, setType] = useState(PROJECT_TYPES[0]);
   const [budget, setBudget] = useState('');
+  const [includeVat, setIncludeVat] = useState(false);
   const [status, setStatus] = useState<Project['status']>('in_progress');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -30,13 +33,14 @@ export default function ProjectFormModal({ open, onClose, editProject }: Props) 
       setClient(editProject.client);
       setType(editProject.type);
       setBudget(String(editProject.budget / 1_000_000));
+      setIncludeVat(false); // default off for edits — can't detect if already included
       setStatus(editProject.status);
       setStartDate(editProject.timeline?.start || '');
       setEndDate(editProject.timeline?.end || '');
       setNote(editProject.note || '');
     } else {
       setName(''); setClient(''); setType(PROJECT_TYPES[0]);
-      setBudget(''); setStatus('in_progress');
+      setBudget(''); setIncludeVat(false); setStatus('in_progress');
       setStartDate(''); setEndDate(''); setNote('');
     }
   }, [editProject, open]);
@@ -45,20 +49,29 @@ export default function ProjectFormModal({ open, onClose, editProject }: Props) 
     const cleaned = val.replace(/[^\d.]/g, '');
     const num = parseFloat(cleaned);
     if (isNaN(num)) return 0;
-    // If user types "210" it means 210tr = 210,000,000
-    return num * 1_000_000;
+    return num * 1_000_000; // triệu → VND
+  };
+
+  // Live preview
+  const baseAmount = parseBudget(budget);
+  const vatAmount = includeVat ? Math.round(baseAmount * VAT_RATE) : 0;
+  const finalAmount = baseAmount + vatAmount;
+
+  const fmtVND = (n: number) => {
+    if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}tỷ`;
+    if (n >= 1_000_000) return `${(n / 1_000_000).toLocaleString('vi')}tr`;
+    return n.toLocaleString('vi') + '₫';
   };
 
   const handleSave = () => {
     if (!name.trim()) return;
-    const budgetAmount = parseBudget(budget);
-    if (budgetAmount <= 0) return;
+    if (baseAmount <= 0) return;
 
     const data = {
       name: name.trim(),
       client: client.trim(),
       type,
-      budget: budgetAmount,
+      budget: finalAmount, // VAT included if checked
       status,
       timeline: startDate && endDate ? { start: startDate, end: endDate } : undefined,
       note: note.trim() || undefined,
@@ -108,7 +121,7 @@ export default function ProjectFormModal({ open, onClose, editProject }: Props) 
         </div>
       </div>
 
-      {/* Budget */}
+      {/* Budget + VAT */}
       <div className="form-group">
         <label>Budget <span className="required">*</span></label>
         <div className="amount-input-wrapper">
@@ -120,6 +133,37 @@ export default function ProjectFormModal({ open, onClose, editProject }: Props) 
             onChange={e => setBudget(e.target.value)}
           />
           <span className="currency">triệu ₫</span>
+        </div>
+
+        {/* VAT checkbox + live preview */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', fontSize: '0.875rem' }}>
+            <input
+              type="checkbox"
+              id="vat-checkbox"
+              checked={includeVat}
+              onChange={e => setIncludeVat(e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: '#6c63ff', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary, #94a3b8)' }}>
+              Có VAT <span style={{ color: '#6c63ff', fontWeight: 600 }}>+8%</span>
+            </span>
+          </label>
+
+          {includeVat && baseAmount > 0 && (
+            <span style={{
+              marginLeft: 'auto',
+              fontSize: '0.78rem',
+              color: 'var(--text-muted, #64748b)',
+              display: 'flex',
+              gap: 5,
+              alignItems: 'center',
+            }}>
+              <span>{fmtVND(baseAmount)}</span>
+              <span style={{ color: '#6c63ff' }}>+ {fmtVND(vatAmount)}</span>
+              <span style={{ color: '#22c55e', fontWeight: 700 }}>= {fmtVND(finalAmount)}</span>
+            </span>
+          )}
         </div>
       </div>
 
