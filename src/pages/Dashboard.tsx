@@ -19,8 +19,10 @@ export default function Dashboard() {
 
   // ─── Debt KPI ─────────────────────────────────────
   const debtSummary = getDebtSummary();
-  const activeProjects = projects.filter(p => p.status === 'in_progress' || p.status === 'review');
-  const nonArchivedProjects = projects.filter(p => p.status !== 'archived');
+  // Exclude internal/salary projects from all dashboard stats
+  const clientProjects = projects.filter(p => !p.isInternal);
+  const activeProjects = clientProjects.filter(p => p.status === 'in_progress' || p.status === 'review');
+  const nonArchivedProjects = clientProjects.filter(p => p.status !== 'archived');
 
   // ─── Tổng Dự Thu KPI = tất cả project budget (completed + active) ───
   const tongDuThuTatCa = nonArchivedProjects.reduce((s, p) => s + (p.budget || 0), 0);
@@ -172,7 +174,7 @@ export default function Dashboard() {
           <div className="kpi-body">
             <span className="kpi-label">Projects</span>
             <span className="kpi-value" style={{ color: 'var(--brand-primary)' }}>{activeProjects.length}</span>
-            <span className="kpi-sub">{projects.length} total</span>
+            <span className="kpi-sub">{clientProjects.length} total</span>
           </div>
         </div>
       </div>
@@ -216,7 +218,7 @@ export default function Dashboard() {
         <div className="card dash-card">
           <h3 className="dash-card-title">🏥 Projects Health</h3>
           <div className="health-list">
-            {projects.filter(p => p.status !== 'archived').map(project => {
+            {clientProjects.filter(p => p.status !== 'archived').map(project => {
               const totals = getProjectTotals(project.id);
               const statusInfo = getStatusLabel(project.status);
               return (
